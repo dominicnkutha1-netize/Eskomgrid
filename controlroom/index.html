@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GridGuard · Control Room</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04060b;--s1:#090d14;--s2:#0f141e;--s3:#151c28;
+  --bord:#18253a;--bord2:#1f3050;
+  --grn:#00e676;--grn2:#00c853;--grnd:#021008;
+  --red:#ff1744;--redd:#1a0005;
+  --amb:#ffab00;--ambd:#1a1000;
+  --pur:#d500f9;--purd:#150020;
+  --tx:#c8d4e0;--tx2:#5a7090;--tx3:#283d52;
+  --mono:'JetBrains Mono',monospace;
+  --display:'Syne',sans-serif;
+  --body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--body);overflow:hidden;}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+header{background:var(--s1);border-bottom:1px solid var(--bord);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.hdr-l{display:flex;align-items:center;gap:10px;}
+.hdr-bolt{width:30px;height:30px;background:var(--grn2);border-radius:7px;display:grid;place-items:center;font-size:15px;}
+.hdr-name{font-family:var(--display);font-size:13px;color:var(--grn);letter-spacing:1px;}
+.hdr-sub{font-family:var(--mono);font-size:8px;color:var(--tx3);letter-spacing:1.5px;margin-top:1px;}
+.hdr-r{display:flex;align-items:center;gap:12px;}
+.live-b{display:flex;align-items:center;gap:5px;background:rgba(0,200,83,.07);border:1px solid rgba(0,200,83,.2);padding:3px 11px;border-radius:20px;font-family:var(--mono);font-size:9px;color:var(--grn);letter-spacing:1px;}
+.clk{font-family:var(--mono);font-size:11px;color:var(--tx3);}
+
+/* BIG STAT ROW */
+.bigstats{background:var(--s1);border-bottom:1px solid var(--bord);display:grid;grid-template-columns:repeat(4,1fr);flex-shrink:0;}
+.bstat{padding:12px 0;text-align:center;border-right:1px solid var(--bord);position:relative;}
+.bstat:last-child{border-right:none;}
+.bstat-top{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:3px;}
+.bstat-n{font-family:var(--mono);font-size:28px;font-weight:700;}
+.bstat-n.red{color:var(--red);}.bstat-n.amb{color:var(--amb);}.bstat-n.grn{color:var(--grn);}.bstat-n.pur{color:var(--pur);}
+.bstat-lbl{font-family:var(--mono);font-size:8px;color:var(--tx3);letter-spacing:1.5px;}
+.bstat-sub{font-family:var(--mono);font-size:8px;color:var(--tx3);opacity:.7;}
+
+/* MAIN GRID */
+.grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;height:calc(100vh - 112px);gap:1px;background:var(--bord);}
+.cell{background:var(--bg);overflow:hidden;position:relative;}
+.cell-hdr{background:var(--s1);border-bottom:1px solid var(--bord);padding:9px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.cell-title{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;}
+.cell-inner{height:calc(100% - 38px);overflow-y:auto;padding:10px;}
+.cell-inner>*{margin-bottom:8px;}
+
+/* MAP CELL */
+.map-cell{display:flex;flex-direction:column;}
+.maparea{flex:1;background:#040810;position:relative;overflow:hidden;}
+.mgrid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,200,83,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,83,.04) 1px,transparent 1px);background-size:36px 36px;}
+.road-h{position:absolute;left:0;right:0;top:53%;height:5px;background:rgba(255,255,255,.06);}
+.road-v{position:absolute;top:0;bottom:0;left:37%;width:4px;background:rgba(255,255,255,.05);}
+.pin{position:absolute;transform:translate(-50%,-100%);cursor:default;}
+.pmark{font-size:18px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));transition:all .4s;}
+.ppulse{position:absolute;top:9px;left:50%;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;border:2px solid;animation:pp 1.8s infinite;opacity:0;}
+@keyframes pp{0%{opacity:.7;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.2)}}
+.plbl{position:absolute;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);color:#fff;font-family:var(--mono);font-size:7px;padding:2px 6px;border-radius:3px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;}
+.pin:hover .plbl{opacity:1;}
+.mzlbl{position:absolute;top:8px;right:10px;font-family:var(--mono);font-size:8px;color:rgba(0,200,83,.4);letter-spacing:1.5px;}
+.mlegend{position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,.8);border:1px solid var(--bord);border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:8px;color:var(--tx3);line-height:1.8;}
+
+/* DEVICE MONITOR CELL */
+.dev-row{display:flex;gap:8px;align-items:center;padding:9px 10px;border-radius:8px;background:var(--s2);border:1px solid var(--bord);animation:ein .3s ease;}
+@keyframes ein{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+.dr-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.dr-dot.ok{background:var(--grn2);}.dr-dot.warn{background:var(--amb);animation:blink 1s infinite;}.dr-dot.crit{background:var(--red);animation:blink .6s infinite;}.dr-dot.sec{background:var(--pur);animation:blink .8s infinite;}
+.dr-id{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--tx);flex:1;}
+.dr-type{font-family:var(--mono);font-size:8px;color:var(--tx3);}
+.dr-status{font-family:var(--mono);font-size:9px;font-weight:700;}
+.dr-status.ok{color:var(--grn);}.dr-status.warn{color:var(--amb);}.dr-status.crit{color:var(--red);}.dr-status.sec{color:var(--pur);}
+
+/* TICKET CELL */
+.ticket{background:var(--s2);border:1px solid var(--bord);border-radius:8px;padding:10px;animation:ein .3s ease;}
+.tkt-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.tkt-id{font-family:var(--mono);font-size:9px;color:var(--tx3);}
+.tkt-sev{font-family:var(--mono);font-size:8px;padding:1px 7px;border-radius:3px;font-weight:700;border:1px solid;}
+.tkt-sev.crit{color:var(--red);border-color:var(--red);background:var(--redd);}
+.tkt-sev.warn{color:var(--amb);border-color:var(--amb);background:var(--ambd);}
+.tkt-sev.sec{color:var(--pur);border-color:var(--pur);background:var(--purd);}
+.tkt-sev.info{color:var(--grn);border-color:var(--grn2);background:var(--grnd);}
+.tkt-type{font-size:12px;font-weight:700;color:var(--tx);margin-bottom:3px;}
+.tkt-det{font-size:10px;color:var(--tx2);line-height:1.4;margin-bottom:5px;}
+.tkt-meta{font-family:var(--mono);font-size:9px;color:var(--tx3);}
+.tkt-action{font-family:var(--mono);font-size:9px;color:var(--grn);margin-top:4px;}
+
+/* ALERT FEED CELL */
+.af-item{display:flex;gap:7px;align-items:flex-start;padding:8px 9px;border-radius:7px;background:var(--s2);border-left:3px solid var(--bord);animation:ein .3s ease;}
+.af-item.crit{border-left-color:var(--red);}.af-item.warn{border-left-color:var(--amb);}.af-item.sec{border-left-color:var(--pur);}.af-item.info{border-left-color:var(--grn2);}
+.af-type{font-size:10px;font-weight:700;color:var(--tx);}
+.af-det{font-size:9px;color:var(--tx2);margin-top:2px;line-height:1.4;}
+.af-meta{font-family:var(--mono);font-size:8px;color:var(--tx3);margin-top:2px;}
+.empty{text-align:center;padding:20px;font-family:var(--mono);font-size:9px;color:var(--tx3);}
+@media(max-width:700px){.grid{grid-template-columns:1fr;grid-template-rows:repeat(4,1fr);}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr-l">
+    <div class="hdr-bolt">⚡</div>
+    <div>
+      <div class="hdr-name">GRIDGUARD CONTROL ROOM</div>
+      <div class="hdr-sub">GAUTENG REGION · ALL DEVICE TYPES · NATIONAL OVERVIEW</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="live-b"><div class="dot" style="color:var(--grn)"></div>LIVE</div>
+    <div class="clk" id="clk"></div>
+  </div>
+</header>
+
+<div class="bigstats">
+  <div class="bstat">
+    <div class="bstat-top"><div class="bstat-n red" id="bsc">0</div></div>
+    <div class="bstat-lbl">CRITICAL ALERTS</div>
+    <div class="bstat-sub">requires immediate action</div>
+  </div>
+  <div class="bstat">
+    <div class="bstat-top"><div class="bstat-n grn" id="bsok">194</div></div>
+    <div class="bstat-lbl">UNITS ONLINE</div>
+    <div class="bstat-sub">18 transformers · 34 danger · 142 residential</div>
+  </div>
+  <div class="bstat">
+    <div class="bstat-top"><div class="bstat-n pur" id="bst">0</div></div>
+    <div class="bstat-lbl">TAMPER EVENTS</div>
+    <div class="bstat-sub">today</div>
+  </div>
+  <div class="bstat">
+    <div class="bstat-top"><div class="bstat-n amb" id="bstix">0</div></div>
+    <div class="bstat-lbl">AUTO-TICKETS</div>
+    <div class="bstat-sub">zero calls required</div>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- TOP LEFT: MAP -->
+  <div class="cell map-cell">
+    <div class="cell-hdr">
+      <span class="cell-title">// SOWETO ZONE 4 — LIVE MAP</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--grn)" id="mapstatus">All nominal</span>
+    </div>
+    <div class="maparea">
+      <div class="mgrid"></div>
+      <div class="road-h"></div>
+      <div class="road-v"></div>
+      <!-- Main transformer (active) -->
+      <div class="pin" id="mp0" style="left:40%;top:50%">
+        <div class="ppulse" id="mp0p" style="display:none"></div>
+        <div class="pmark" id="mp0m">🟢</div>
+        <div class="plbl" id="mp0l">TRF-SW04-A · Normal</div>
+      </div>
+      <!-- Other static pins -->
+      <div class="pin" style="left:19%;top:28%"><div class="pmark">🟢</div><div class="plbl">TRF-SW04-B</div></div>
+      <div class="pin" style="left:67%;top:20%"><div class="pmark">🟢</div><div class="plbl">TRF-SW04-C</div></div>
+      <div class="pin" style="left:80%;top:62%"><div class="pmark">🟢</div><div class="plbl">TRF-SW04-D</div></div>
+      <!-- Danger boxes -->
+      <div class="pin" id="dp0" style="left:32%;top:42%">
+        <div class="ppulse" id="dp0p" style="display:none"></div>
+        <div class="pmark" id="dp0m">🟡</div>
+        <div class="plbl" id="dp0l">DBX-SW04-03 · Secure</div>
+      </div>
+      <div class="pin" style="left:55%;top:35%"><div class="pmark">🟡</div><div class="plbl">DBX-SW04-04</div></div>
+      <div class="pin" style="left:24%;top:60%"><div class="pmark">🟡</div><div class="plbl">DBX-SW04-05</div></div>
+      <!-- Residential -->
+      <div class="pin" id="rp0" style="left:43%;top:63%">
+        <div class="ppulse" id="rp0p" style="display:none"></div>
+        <div class="pmark" id="rp0m">🟠</div>
+        <div class="plbl" id="rp0l">RES-DUBE-017 · Normal</div>
+      </div>
+      <div class="pin" style="left:37%;top:73%"><div class="pmark">🟠</div><div class="plbl">RES-DUBE-019</div></div>
+      <div class="pin" style="left:51%;top:71%"><div class="pmark">🟠</div><div class="plbl">RES-DUBE-022</div></div>
+      <div class="mzlbl">SOWETO ZONE 4</div>
+      <div class="mlegend">🔴 Transformer · 🟡 Danger Box · 🟠 Residential</div>
+    </div>
+  </div>
+
+  <!-- TOP RIGHT: DEVICE MONITOR -->
+  <div class="cell" style="display:flex;flex-direction:column;">
+    <div class="cell-hdr">
+      <span class="cell-title">// DEVICE MONITOR — ALL TYPES</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--tx3)" id="devcount">24 devices</span>
+    </div>
+    <div class="cell-inner" id="devMonitor">
+      <!-- Pre-populate static devices -->
+    </div>
+  </div>
+
+  <!-- BOTTOM LEFT: TICKETS -->
+  <div class="cell" style="display:flex;flex-direction:column;">
+    <div class="cell-hdr">
+      <span class="cell-title">// AUTO-FILED JOB TICKETS</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--amb)" id="tktcount">0 tickets</span>
+    </div>
+    <div class="cell-inner" id="tktFeed">
+      <div class="empty">No tickets — all clear</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM RIGHT: ALERT FEED -->
+  <div class="cell" style="display:flex;flex-direction:column;">
+    <div class="cell-hdr">
+      <span class="cell-title">// REAL-TIME ALERT FEED</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--grn)" id="afcount">0 events</span>
+    </div>
+    <div class="cell-inner" id="afFeed">
+      <div class="empty">Monitoring all 194 units...</div>
+    </div>
+  </div>
+</div>
+
+<script src="../gg-engine.js"></script>
+<script>
+setInterval(()=>{document.getElementById('clk').textContent=new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
+
+// Pre-populate device monitor
+const devices=[
+  {id:'TRF-SW04-A',type:'TRANSFORMER',status:'ok',statusLbl:'Normal'},
+  {id:'TRF-SW04-B',type:'TRANSFORMER',status:'ok',statusLbl:'Normal'},
+  {id:'TRF-SW04-C',type:'TRANSFORMER',status:'ok',statusLbl:'Normal'},
+  {id:'TRF-SW04-D',type:'TRANSFORMER',status:'ok',statusLbl:'Normal'},
+  {id:'DBX-SW04-03',type:'DANGER BOX',status:'ok',statusLbl:'Secure'},
+  {id:'DBX-SW04-04',type:'DANGER BOX',status:'ok',statusLbl:'Secure'},
+  {id:'DBX-SW04-05',type:'DANGER BOX',status:'ok',statusLbl:'Secure'},
+  {id:'RES-DUBE-017',type:'RESIDENTIAL',status:'ok',statusLbl:'Normal'},
+  {id:'RES-DUBE-019',type:'RESIDENTIAL',status:'ok',statusLbl:'Normal'},
+  {id:'RES-DUBE-022',type:'RESIDENTIAL',status:'ok',statusLbl:'Normal'},
+];
+const devEl={};
+const dm=document.getElementById('devMonitor');
+devices.forEach(d=>{
+  const el=document.createElement('div');el.className='dev-row';
+  const icon=d.type==='TRANSFORMER'?'🔴':d.type==='DANGER BOX'?'🟡':'🟠';
+  el.innerHTML=`<div class="dr-dot ok" id="dot-${d.id}"></div><div><div class="dr-id">${icon} ${d.id}</div><div class="dr-type">${d.type}</div></div><div class="dr-status ok" id="st-${d.id}">NORMAL</div>`;
+  dm.appendChild(el);devEl[d.id]=el;
+});
+
+let counts={c:0,t:0,tix:0,af:0};
+const SEV={CRITICAL:'crit',HIGH:'warn',MEDIUM:'warn',INFO:'info',crit:'crit',warn:'warn',sec:'sec',info:'info'};
+const PEMOJI={crit:'🔴',warn:'🟡',sec:'🟣',info:'🟢'};
+function getSev(ev){const s=(ev.severity||ev.color||'');return SEV[s.toUpperCase()]||SEV[s.toLowerCase()]||'info';}
+
+function handleEvent(ev){
+  if(!ev||!ev.alertType)return;
+  const sev=getSev(ev);
+  const dt=(ev.deviceType||'TRANSFORMER').toUpperCase();
+
+  if(sev==='crit'){counts.c++;document.getElementById('bsc').textContent=counts.c;}
+  if(sev==='sec'||ev.alertType.includes('TAMPER')){counts.t++;document.getElementById('bst').textContent=counts.t;}
+  counts.tix++;document.getElementById('bstix').textContent=counts.tix;
+  const ok=Math.max(0,194-counts.c);document.getElementById('bsok').textContent=ok;
+
+  // Update device monitor
+  const did=ev.deviceId||'TRF-SW04-A';
+  const dotEl=document.getElementById('dot-'+did);
+  const stEl=document.getElementById('st-'+did);
+  if(dotEl){dotEl.className='dr-dot '+sev;}
+  if(stEl){stEl.className='dr-status '+sev;stEl.textContent=(ev.alertType||'').replace(/_/g,' ').slice(0,12).toUpperCase();}
+
+  // Update map
+  const emoji=PEMOJI[sev]||'🟢';
+  const color=sev==='crit'?'var(--red)':sev==='warn'?'var(--amb)':sev==='sec'?'var(--pur)':'var(--grn2)';
+  const showPulse=sev==='crit'||sev==='sec'||sev==='warn';
+  const lbl=did+' · '+(ev.alertType||'').replace(/_/g,' ');
+  document.getElementById('mapstatus').textContent=sev==='crit'?'⚠ CRITICAL':sev==='warn'?'⚠ WARNING':'All nominal';
+  document.getElementById('mapstatus').style.color=sev==='crit'?'var(--red)':sev==='warn'?'var(--amb)':'var(--grn)';
+
+  if(dt.includes('TRANSFORMER')||(did||'').startsWith('TRF')){
+    document.getElementById('mp0m').textContent=emoji;
+    document.getElementById('mp0l').textContent=lbl;
+    const p=document.getElementById('mp0p');p.style.display=showPulse?'block':'none';p.style.borderColor=color;
+  } else if(dt.includes('DANGER')||(did||'').startsWith('DBX')){
+    document.getElementById('dp0m').textContent=sev==='sec'?'🟣':'🟡';
+    document.getElementById('dp0l').textContent=lbl;
+    const p=document.getElementById('dp0p');p.style.display=showPulse?'block':'none';p.style.borderColor=color;
+  } else if(dt.includes('RESIDENTIAL')||(did||'').startsWith('RES')){
+    document.getElementById('rp0m').textContent=sev==='warn'||sev==='crit'?'🔴':'🟠';
+    document.getElementById('rp0l').textContent=lbl;
+    const p=document.getElementById('rp0p');p.style.display=showPulse?'block':'none';p.style.borderColor=color;
+  }
+
+  // Add ticket
+  if(ev.ticketId){
+    counts.tix++;document.getElementById('tktcount').textContent=counts.tix+' ticket'+(counts.tix!==1?'s':'');
+    const feed=document.getElementById('tktFeed');
+    const ph=feed.querySelector('.empty');if(ph)ph.remove();
+    const t=document.createElement('div');t.className='ticket';
+    t.innerHTML=`<div class="tkt-top"><span class="tkt-id">${ev.ticketId}</span><span class="tkt-sev ${sev}">${sev.toUpperCase()}</span></div><div class="tkt-type">${ev.emoji||'⚡'} ${(ev.alertType||'').replace(/_/g,' ')}</div><div class="tkt-det">${ev.message||''}</div><div class="tkt-meta">${ev.deviceId||'—'} · ${ev.zone||'—'} · ${ev.timestamp||''}</div><div class="tkt-action">↳ ${ev.autoAction||'Ticket filed'}</div>`;
+    feed.insertBefore(t,feed.firstChild);
+  }
+
+  // Alert feed
+  counts.af++;document.getElementById('afcount').textContent=counts.af+' event'+(counts.af!==1?'s':'');
+  const af=document.getElementById('afFeed');
+  const ph=af.querySelector('.empty');if(ph)ph.remove();
+  const a=document.createElement('div');a.className='af-item '+sev;
+  a.innerHTML=`<div><div class="af-type">${ev.emoji||'⚡'} ${(ev.alertType||'').replace(/_/g,' ')}</div><div class="af-det">${ev.message||''}</div><div class="af-meta">${ev.deviceId||'—'} · ${ev.timestamp||''} · 0s delay</div></div>`;
+  af.insertBefore(a,af.firstChild);
+}
+
+GG.on(handleEvent);
+</script>
+</body>
+</html>

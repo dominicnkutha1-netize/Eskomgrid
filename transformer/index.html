@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GridGuard · Transformer Unit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--s1:#0d1117;--s2:#131922;--s3:#1a2233;
+  --bord:#1f2d42;--bord2:#253350;
+  --grn:#00e676;--grn2:#00c853;--grnd:#003d1a;
+  --red:#ff1744;--redd:#3d0010;
+  --amb:#ffab00;--ambd:#3d2800;
+  --pur:#d500f9;--purd:#2d0040;
+  --blue:#2979ff;
+  --tx:#dde4f0;--tx2:#7a8fa8;--tx3:#3d5166;
+  --mono:'JetBrains Mono',monospace;
+  --display:'Syne',sans-serif;
+  --body:'Inter',sans-serif;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--body);}
+
+/* SCANLINES */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);pointer-events:none;z-index:9999;}
+
+/* HEADER */
+header{background:var(--s1);border-bottom:1px solid var(--bord);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-bolt{width:34px;height:34px;background:var(--grn2);border-radius:8px;display:grid;place-items:center;font-size:18px;flex-shrink:0;}
+.brand-name{font-family:var(--display);font-size:15px;color:var(--grn);letter-spacing:1px;}
+.brand-sub{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:1.5px;margin-top:1px;}
+.status-badge{display:flex;align-items:center;gap:7px;padding:5px 14px;border-radius:30px;border:1px solid var(--grn2);background:rgba(0,200,83,.07);font-family:var(--mono);font-size:11px;color:var(--grn);transition:all .4s;}
+.status-badge.warn{border-color:var(--amb);background:rgba(255,171,0,.07);color:var(--amb);}
+.status-badge.crit{border-color:var(--red);background:rgba(255,23,68,.08);color:var(--red);animation:critpulse 1s infinite;}
+.status-badge.sec{border-color:var(--pur);background:rgba(213,0,249,.07);color:var(--pur);}
+@keyframes critpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,23,68,.4)}50%{box-shadow:0 0 0 8px rgba(255,23,68,0)}}
+.sbdot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* MAIN LAYOUT */
+main{padding:18px 20px;max-width:1100px;margin:0 auto;}
+
+/* SENSOR CARDS */
+.sensors{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.sensor{background:var(--s1);border:1px solid var(--bord);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;transition:border-color .3s;}
+.sensor::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--grn2);transition:background .3s;}
+.sensor.warn{border-color:var(--amb);}.sensor.warn::before{background:var(--amb);}
+.sensor.crit{border-color:var(--red);}.sensor.crit::before{background:var(--red);}
+.sensor-lbl{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;}
+.sensor-val{font-family:var(--mono);font-size:34px;font-weight:700;color:var(--grn);line-height:1;transition:color .3s;}
+.sensor-val.warn{color:var(--amb);}.sensor-val.crit{color:var(--red);}
+.sensor-unit{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:5px;}
+.sensor-bar{height:3px;background:var(--bord);border-radius:2px;margin-top:10px;overflow:hidden;}
+.sensor-fill{height:3px;background:var(--grn2);border-radius:2px;transition:width .8s ease,background .3s;}
+
+/* DEVICE TYPE SELECTOR */
+.dtype-row{display:flex;gap:8px;margin-bottom:16px;}
+.dtype-btn{flex:1;padding:10px 14px;border-radius:8px;border:1px solid var(--bord);background:transparent;color:var(--tx2);font-family:var(--mono);font-size:10px;cursor:pointer;letter-spacing:1px;transition:all .2s;text-align:center;}
+.dtype-btn:hover{border-color:var(--bord2);color:var(--tx);}
+.dtype-btn.act-t{border-color:var(--red);color:var(--red);background:rgba(255,23,68,.06);}
+.dtype-btn.act-d{border-color:var(--amb);color:var(--amb);background:rgba(255,171,0,.06);}
+.dtype-btn.act-r{border-color:var(--pur);color:var(--pur);background:rgba(213,0,249,.06);}
+
+/* SCENARIOS */
+.scenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.scene{background:var(--s1);border:1px solid var(--bord);border-radius:var(--r);padding:15px;cursor:pointer;text-align:left;color:var(--tx);font-family:var(--body);transition:all .2s;position:relative;overflow:hidden;}
+.scene::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;}
+.scene:hover{border-color:var(--bord2);transform:translateY(-1px);}
+.scene.active{border-color:var(--grn2);}
+.scene.active::after{background:rgba(0,230,118,.03);opacity:1;}
+.scene.active.s-warn{border-color:var(--amb);}
+.scene.active.s-warn::after{background:rgba(255,171,0,.04);opacity:1;}
+.scene.active.s-crit{border-color:var(--red);}
+.scene.active.s-crit::after{background:rgba(255,23,68,.05);opacity:1;}
+.scene.active.s-sec{border-color:var(--pur);}
+.scene.active.s-sec::after{background:rgba(213,0,249,.05);opacity:1;}
+.scene-icon{font-size:22px;margin-bottom:8px;}
+.scene-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.scene-desc{font-size:11px;color:var(--tx2);line-height:1.5;}
+
+/* BOTTOM ROW */
+.bottom{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.card{background:var(--s1);border:1px solid var(--bord);border-radius:var(--r);padding:16px;}
+.card-title{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;margin-bottom:12px;}
+.door-row{display:flex;align-items:center;gap:12px;}
+.door-icon{font-size:30px;transition:transform .4s;}
+.door-icon.open{transform:rotate(-20deg);}
+.door-status{font-family:var(--mono);font-size:13px;}
+.door-status.ok{color:var(--grn);}
+.door-status.warn{color:var(--amb);}
+.door-status.crit{color:var(--red);}
+.door-sub{font-size:10px;color:var(--tx3);margin-top:3px;font-family:var(--mono);}
+.nfc-btn{width:100%;margin-top:12px;padding:11px;background:transparent;border:1px dashed var(--grn2);border-radius:8px;color:var(--grn);font-family:var(--mono);font-size:11px;cursor:pointer;letter-spacing:1px;transition:all .2s;}
+.nfc-btn:hover{background:rgba(0,200,83,.08);}
+.nfc-btn.authed{background:rgba(0,200,83,.1);border-style:solid;}
+.rfid-status{font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:4px;}
+
+/* LOG */
+.log-box{background:var(--s1);border:1px solid var(--bord);border-radius:var(--r);overflow:hidden;}
+.log-head{padding:10px 14px;border-bottom:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between;}
+.log-head-l{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;}
+.log-count{font-family:var(--mono);font-size:11px;color:var(--grn);}
+.log-entries{padding:10px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.log-entry{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:7px;background:var(--s2);animation:slid .3s ease;}
+@keyframes slid{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.log-tag{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px;border:1px solid;font-weight:700;}
+.log-tag.crit{color:var(--red);border-color:var(--red);background:var(--redd);}
+.log-tag.warn{color:var(--amb);border-color:var(--amb);background:var(--ambd);}
+.log-tag.info{color:var(--grn);border-color:var(--grn2);background:var(--grnd);}
+.log-tag.sec{color:var(--pur);border-color:var(--pur);background:var(--purd);}
+.log-msg{font-family:var(--mono);font-size:11px;flex:1;line-height:1.5;}
+.log-msg span{color:var(--tx2);font-size:9px;display:block;margin-top:2px;}
+.log-time{font-family:var(--mono);font-size:9px;color:var(--tx3);white-space:nowrap;}
+.log-empty{text-align:center;padding:20px;font-family:var(--mono);font-size:11px;color:var(--tx3);}
+
+/* FB status bar */
+.fb-bar{margin-top:12px;background:var(--s1);border:1px solid var(--bord);border-radius:8px;padding:9px 14px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10px;color:var(--tx3);}
+
+@media(max-width:700px){
+  .sensors{grid-template-columns:repeat(2,1fr);}
+  .scenarios{grid-template-columns:1fr 1fr;}
+  .bottom{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="brand-bolt">⚡</div>
+    <div>
+      <div class="brand-name">GRIDGUARD</div>
+      <div class="brand-sub">TRANSFORMER UNIT · TRF-SW04-A · DUBE ST, SOWETO</div>
+    </div>
+  </div>
+  <div class="status-badge" id="stbadge"><div class="sbdot"></div><span id="stxt">NOMINAL</span></div>
+</header>
+
+<main>
+  <!-- Sensors -->
+  <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;margin-bottom:10px;">// LIVE SENSOR READINGS</div>
+  <div class="sensors">
+    <div class="sensor" id="sv">
+      <div class="sensor-lbl">VOLTAGE</div>
+      <div class="sensor-val" id="vv">230</div>
+      <div class="sensor-unit">Volts AC</div>
+      <div class="sensor-bar"><div class="sensor-fill" id="vbar" style="width:92%"></div></div>
+    </div>
+    <div class="sensor" id="si">
+      <div class="sensor-lbl">CURRENT</div>
+      <div class="sensor-val" id="vi">22</div>
+      <div class="sensor-unit">Amperes</div>
+      <div class="sensor-bar"><div class="sensor-fill" id="ibar" style="width:55%"></div></div>
+    </div>
+    <div class="sensor" id="st">
+      <div class="sensor-lbl">TEMPERATURE</div>
+      <div class="sensor-val" id="vt">41</div>
+      <div class="sensor-unit">°Celsius</div>
+      <div class="sensor-bar"><div class="sensor-fill" id="tbar" style="width:33%"></div></div>
+    </div>
+    <div class="sensor" id="sg">
+      <div class="sensor-lbl">G-FORCE / IMPACT</div>
+      <div class="sensor-val" id="vg">0.1</div>
+      <div class="sensor-unit">G (tamper detect)</div>
+      <div class="sensor-bar"><div class="sensor-fill" id="gbar" style="width:4%"></div></div>
+    </div>
+  </div>
+
+  <!-- Device type -->
+  <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;margin-bottom:10px;">// SELECT DEVICE TYPE TO SIMULATE</div>
+  <div class="dtype-row">
+    <button class="dtype-btn act-t" onclick="setDType('transformer',this)">🔴 TRANSFORMER UNIT</button>
+    <button class="dtype-btn" onclick="setDType('danger',this)">🟡 DANGER BOX / STREET</button>
+    <button class="dtype-btn" onclick="setDType('residential',this)">🟠 RESIDENTIAL BOX</button>
+  </div>
+
+  <!-- Scenarios -->
+  <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;margin-bottom:10px;" id="slbl">// TRANSFORMER SCENARIOS — CLICK TO TRIGGER</div>
+  <div class="scenarios" id="scgrid"></div>
+
+  <div class="bottom">
+    <div class="card">
+      <div class="card-title">// DOOR / BOX STATUS</div>
+      <div class="door-row">
+        <div class="door-icon" id="dicon">🔒</div>
+        <div>
+          <div class="door-status ok" id="dtxt">CLOSED & SECURE</div>
+          <div class="door-sub" id="dsub">Reed switch: CLOSED · No force detected</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">// RFID / NFC AUTHENTICATION</div>
+      <div class="rfid-status" id="rfidst">Awaiting card tap...</div>
+      <button class="nfc-btn" id="nfcbtn" onclick="tapRFID()">[ TAP ESKOM KEY CARD — SIMULATE ]</button>
+    </div>
+  </div>
+
+  <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;margin-bottom:10px;">// OUTBOUND ALERTS → ESKOM + RESIDENTS (REAL-TIME)</div>
+  <div class="log-box">
+    <div class="log-head">
+      <span class="log-head-l">EVENT LOG — FIRING TO ALL CONNECTED APPS</span>
+      <span class="log-count" id="lcnt">0 events</span>
+    </div>
+    <div class="log-entries" id="lents">
+      <div class="log-empty">— Grid nominal — no alerts fired —</div>
+    </div>
+  </div>
+
+  <div class="fb-bar">
+    <div class="sbdot" style="animation:blink 1.4s infinite;color:var(--grn);width:7px;height:7px;border-radius:50%;background:var(--grn);flex-shrink:0;"></div>
+    <span>Real-time engine active · Open other apps in separate tabs · All events sync instantly</span>
+  </div>
+</main>
+
+<script src="../gg-engine.js"></script>
+<script>
+// ── Scene definitions ───────────────────────────────────────
+const SCENES = {
+  transformer:[
+    {id:'normal',   icon:'✅',name:'Normal Operation',    desc:'All sensors nominal — grid live',          cls:''},
+    {id:'trip',     icon:'⚡',name:'Breaker Tripped',     desc:'Voltage drop → auto-alerts Eskom',         cls:'s-warn'},
+    {id:'blown',    icon:'💥',name:'Transformer Blown',   desc:'0V + temp spike → CRITICAL alert',         cls:'s-crit'},
+    {id:'tamper_transformer',icon:'🚨',name:'Tamper Detected',desc:'Force without RFID → security alert', cls:'s-sec'},
+    {id:'bridge',   icon:'🔌',name:'Electricity Bridging',desc:'Current 67A → illegal bypass detected',   cls:'s-warn'},
+    {id:'maint',    icon:'🔧',name:'Authorised Maintenance',desc:'RFID auth → residents notified',        cls:''},
+  ],
+  danger:[
+    {id:'normal',       icon:'✅',name:'Box Sealed',       desc:'No tampering — secure',                   cls:''},
+    {id:'tamper_danger',icon:'⚠️',name:'Box Tampered',    desc:'G-force detected → copper theft alert',   cls:'s-sec'},
+    {id:'tamper_danger',icon:'🔨',name:'Box Forced Open',  desc:'Door broken → immediate security alert', cls:'s-crit'},
+  ],
+  residential:[
+    {id:'normal', icon:'✅',name:'Normal Usage',           desc:'Normal household current — OK',           cls:''},
+    {id:'bridge', icon:'🔌',name:'Illegal Bridging',       desc:'67A spike → relay cuts supply',           cls:'s-warn'},
+    {id:'tamper_transformer',icon:'🛠️',name:'Box Pried',  desc:'Force on meter box → alert',              cls:'s-sec'},
+  ],
+};
+
+// ── Sensor state ────────────────────────────────────────────
+const STATES = {
+  normal:{v:230,i:22,t:41,g:.1,door:'closed',vc:'',ic:'',tc:'',gc:'',st:'NOMINAL',sc:'',vp:92,ip:55,tp:33,gp:4},
+  trip:  {v:84, i:3, t:52,g:.2,door:'closed',vc:'warn',ic:'warn',tc:'warn',gc:'',st:'TRIPPED',sc:'warn',vp:34,ip:10,tp:42,gp:8},
+  blown: {v:0,  i:0, t:94,g:.1,door:'closed',vc:'crit',ic:'crit',tc:'crit',gc:'',st:'BLOWN',sc:'crit',vp:0,ip:0,tp:75,gp:4},
+  tamper_transformer:{v:229,i:18,t:38,g:3.8,door:'forced',vc:'',ic:'',tc:'',gc:'crit',st:'TAMPER',sc:'sec',vp:91,ip:45,tp:30,gp:95},
+  tamper_danger:     {v:null,i:null,t:null,g:2.4,door:'forced',vc:'',ic:'',tc:'',gc:'warn',st:'TAMPER',sc:'sec',vp:0,ip:0,tp:0,gp:60},
+  bridge:{v:231,i:67,t:46,g:.2,door:'closed',vc:'',ic:'crit',tc:'',gc:'',st:'BRIDGING',sc:'warn',vp:92,ip:100,tp:37,gp:8},
+  maint: {v:229,i:18,t:40,g:.3,door:'open',  vc:'',ic:'',tc:'',gc:'',st:'MAINTENANCE',sc:'',vp:91,ip:45,tp:32,gp:12},
+};
+
+let curScene='normal', activeBtn=null, rfidAuthed=false, rfidTimer=null, logCount=0, dtype='transformer';
+
+// ── Build scene grid ────────────────────────────────────────
+function buildScenes(type) {
+  const grid = document.getElementById('scgrid');
+  const lbl  = document.getElementById('slbl');
+  const lbls = {transformer:'// TRANSFORMER SCENARIOS — CLICK TO TRIGGER',danger:'// DANGER BOX / STREET BREAKER SCENARIOS',residential:'// RESIDENTIAL PREPAID BOX SCENARIOS'};
+  lbl.textContent = lbls[type];
+  grid.innerHTML = '';
+  SCENES[type].forEach((sc,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'scene' + (i===0?' active':'');
+    btn.innerHTML = `<div class="scene-icon">${sc.icon}</div><div class="scene-name">${sc.name}</div><div class="scene-desc">${sc.desc}</div>`;
+    btn.onclick = () => triggerScene(sc.id, btn, sc.cls);
+    grid.appendChild(btn);
+    if (i===0) activeBtn = btn;
+  });
+}
+
+function setDType(type, btn) {
+  dtype = type;
+  document.querySelectorAll('.dtype-btn').forEach(b=>b.className='dtype-btn');
+  btn.className = 'dtype-btn act-' + (type==='transformer'?'t':type==='danger'?'d':'r');
+  buildScenes(type);
+  triggerScene('normal', document.querySelector('.scene'), '');
+}
+
+function triggerScene(id, btn, cls) {
+  curScene = id;
+  if (activeBtn) { activeBtn.classList.remove('active','s-warn','s-crit','s-sec'); }
+  btn.classList.add('active');
+  if (cls) btn.classList.add(cls);
+  activeBtn = btn;
+
+  const s = STATES[id] || STATES.normal;
+  setSensor('sv','vv','vbar', s.v, s.vc, s.vp);
+  setSensor('si','vi','ibar', s.i, s.ic, s.ip);
+  setSensor('st','vt','tbar', s.t, s.tc, s.tp);
+  setSensor('sg','vg','gbar', s.g, s.gc, s.gp);
+  setDoor(s.door);
+
+  const badge = document.getElementById('stbadge');
+  const stxt  = document.getElementById('stxt');
+  badge.className = 'status-badge' + (s.sc?' '+s.sc:'');
+  stxt.textContent = s.st;
+
+  if (id !== 'normal') {
+    const ev = GG.fire(id);
+    if (ev) addLog(ev.color||'info', ev.alertType, ev.message, ev.timestamp);
+  }
+}
+
+function setSensor(cid,vid,bid,val,cls,pct) {
+  const c=document.getElementById(cid), v=document.getElementById(vid), b=document.getElementById(bid);
+  c.className='sensor'+(cls?' '+cls:'');
+  v.className='sensor-val'+(cls?' '+cls:'');
+  v.textContent = val===null?'—':val;
+  b.style.width=(pct||0)+'%';
+  b.style.background=cls==='crit'?'var(--red)':cls==='warn'?'var(--amb)':'var(--grn2)';
+}
+
+function setDoor(st) {
+  const ic=document.getElementById('dicon'), tx=document.getElementById('dtxt'), sb=document.getElementById('dsub');
+  if(st==='closed'){ic.textContent='🔒';ic.className='door-icon';tx.textContent='CLOSED & SECURE';tx.className='door-status ok';sb.textContent='Reed switch: CLOSED · No force detected';}
+  else if(st==='open'){ic.textContent='🔓';ic.className='door-icon open';tx.textContent='OPEN — AUTHORISED';tx.className='door-status warn';sb.textContent='RFID authenticated · 30s window active';}
+  else{ic.textContent='🚨';ic.className='door-icon open';tx.textContent='FORCED OPEN — ALERT';tx.className='door-status crit';sb.textContent='No RFID auth · Tamper in progress';}
+}
+
+function addLog(sev,type,msg,ts) {
+  logCount++;
+  document.getElementById('lcnt').textContent=logCount+' event'+(logCount!==1?'s':'');
+  const ents=document.getElementById('lents');
+  const ph=ents.querySelector('.log-empty');if(ph)ph.remove();
+  const d=document.createElement('div');d.className='log-entry';
+  d.innerHTML=`<div class="log-tag ${sev}">${sev.toUpperCase()}</div><div class="log-msg">${(type||'').replace(/_/g,' ')}<span>${msg||''}</span></div><div class="log-time">${ts||''}</div>`;
+  ents.insertBefore(d,ents.firstChild);
+}
+
+function tapRFID() {
+  if(rfidAuthed)return;
+  rfidAuthed=true;
+  const btn=document.getElementById('nfcbtn'), st=document.getElementById('rfidst');
+  btn.textContent='[ ✓ CARD EK2847 AUTHENTICATED — 30s WINDOW ]';
+  btn.classList.add('authed');
+  st.textContent='Tech EK2847 authenticated · Access window active';
+  st.style.color='var(--grn)';
+  const ev=GG.sendRFID('EK2847');
+  addLog('info','RFID_AUTHENTICATED',ev.message,ev.timestamp);
+  rfidTimer=setTimeout(()=>{
+    rfidAuthed=false;
+    btn.textContent='[ TAP ESKOM KEY CARD — SIMULATE ]';
+    btn.classList.remove('authed');
+    st.textContent='Auth expired · Tap again to re-authenticate';
+    st.style.color='var(--tx3)';
+  },30000);
+}
+
+// Sensor fluctuation
+setInterval(()=>{
+  if(curScene==='normal'){
+    document.getElementById('vv').textContent=(228+Math.random()*4).toFixed(0);
+    document.getElementById('vi').textContent=(20+Math.random()*4).toFixed(0);
+  }
+},2500);
+
+buildScenes('transformer');
+</script>
+</body>
+</html>

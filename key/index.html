@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>GridGuard · Eskom Key</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--s1:#0d1117;--s2:#131922;
+  --bord:#1f2d42;--bord2:#253350;
+  --grn:#00e676;--grn2:#00c853;--grnd:#031508;
+  --red:#ff1744;--amb:#ffab00;--pur:#d500f9;
+  --blue:#60a5fa;--bluebg:#0c1a35;
+  --tx:#dde4f0;--tx2:#7a8fa8;--tx3:#3d5166;
+  --mono:'JetBrains Mono',monospace;
+  --display:'Syne',sans-serif;
+  --body:'Inter',sans-serif;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:var(--body);max-width:430px;margin:0 auto;}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:blink 1.4s infinite;flex-shrink:0;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* HEADER */
+header{background:var(--s1);border-bottom:1px solid var(--bord);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;}
+.brand{font-family:var(--display);font-size:14px;color:var(--grn);letter-spacing:1px;}
+.brand-sub{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:1px;margin-top:1px;}
+.sig{display:flex;gap:3px;align-items:flex-end;}
+.sb{width:4px;background:var(--grn2);border-radius:1px;}
+
+main{padding:18px 16px;display:flex;flex-direction:column;gap:14px;}
+
+/* NFC ZONE */
+.nfc-zone{background:var(--s1);border:2px dashed var(--bord);border-radius:20px;padding:30px 20px;text-align:center;cursor:pointer;transition:all .25s;user-select:none;-webkit-user-select:none;}
+.nfc-zone:active{transform:scale(.97);}
+.nfc-zone.authed{border-color:var(--grn2);background:rgba(0,200,83,.05);box-shadow:0 0 40px rgba(0,230,118,.08);}
+.nfc-icon{font-size:56px;margin-bottom:14px;display:block;}
+.nfc-title{font-family:var(--mono);font-size:15px;letter-spacing:1px;margin-bottom:6px;}
+.nfc-sub{font-size:12px;color:var(--tx3);}
+
+/* TIMER */
+.timer-box{background:rgba(0,200,83,.06);border:1px solid var(--grn2);border-radius:var(--r);padding:14px 18px;text-align:center;display:none;}
+.timer-box.show{display:block;}
+.timer-lbl{font-family:var(--mono);font-size:9px;color:var(--grn);letter-spacing:2px;margin-bottom:6px;}
+.timer-val{font-family:var(--mono);font-size:40px;font-weight:700;color:var(--grn);line-height:1;}
+.timer-bar-bg{background:var(--bord);height:4px;border-radius:2px;margin-top:10px;overflow:hidden;}
+.timer-bar{height:4px;background:var(--grn2);border-radius:2px;transition:width 1s linear;}
+
+/* RELAY */
+.relay-sec{background:var(--s1);border:1px solid var(--bord);border-radius:var(--r);overflow:hidden;}
+.relay-hdr{padding:11px 15px;border-bottom:1px solid var(--bord);font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;}
+.relay-btns{padding:11px;display:flex;flex-direction:column;gap:7px;}
+.rbtn{width:100%;padding:12px 15px;background:rgba(255,255,255,.03);border:1px solid var(--bord);border-radius:10px;color:var(--tx);font-family:var(--body);font-size:13px;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:all .15s;}
+.rbtn:active{transform:scale(.98);}
+.rbtn.sel,.rbtn:hover{background:var(--bluebg);border-color:var(--blue);color:var(--blue);}
+.ricon{font-size:17px;}
+.send-btn{margin:0 11px 12px;width:calc(100% - 22px);padding:13px;background:var(--blue);border:none;border-radius:10px;color:#fff;font-family:var(--body);font-size:14px;font-weight:700;cursor:pointer;display:none;transition:all .15s;}
+.send-btn:active{transform:scale(.97);}
+.send-btn.show{display:block;}
+
+/* INCOMING */
+.inc-sec{background:var(--s1);border:1px solid var(--bord);border-radius:var(--r);overflow:hidden;}
+.inc-hdr{padding:11px 15px;border-bottom:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between;}
+.inc-title{font-family:var(--mono);font-size:9px;color:var(--tx3);letter-spacing:2px;}
+.inc-feed{padding:10px;display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;}
+.inc-item{border-radius:9px;padding:10px 12px;border:1px solid var(--bord);animation:popin .3s ease;}
+@keyframes popin{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.inc-item.crit{background:#1f0008;border-color:var(--red);}
+.inc-item.warn{background:#1f1200;border-color:var(--amb);}
+.inc-item.sec{background:#1a0025;border-color:var(--pur);}
+.inc-item.info{background:#031508;border-color:var(--grn2);}
+.inc-type{font-family:var(--mono);font-size:11px;font-weight:700;margin-bottom:3px;}
+.inc-type.crit{color:var(--red);}.inc-type.warn{color:var(--amb);}.inc-type.sec{color:var(--pur);}.inc-type.info{color:var(--grn);}
+.inc-det{font-size:11px;color:var(--tx);line-height:1.4;}
+.inc-meta{font-size:9px;color:var(--tx3);margin-top:3px;font-family:var(--mono);}
+.inc-empty{text-align:center;padding:16px;font-family:var(--mono);font-size:10px;color:var(--tx3);}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--grn2);color:#000;font-family:var(--mono);font-size:12px;font-weight:700;padding:11px 24px;border-radius:30px;transition:transform .3s;white-space:nowrap;z-index:100;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="brand">⚡ GRIDGUARD KEY</div>
+    <div class="brand-sub">ESKOM TECH DEVICE · EK2847</div>
+  </div>
+  <div class="sig">
+    <div class="sb" style="height:5px"></div>
+    <div class="sb" style="height:9px"></div>
+    <div class="sb" style="height:13px"></div>
+    <div class="sb" style="height:17px"></div>
+  </div>
+</header>
+
+<main>
+  <div class="nfc-zone" id="nfcZone" onclick="tapKey()">
+    <span class="nfc-icon" id="nfcIcon">📲</span>
+    <div class="nfc-title" id="nfcTitle">TAP TO AUTHENTICATE</div>
+    <div class="nfc-sub" id="nfcSub">Hold near transformer RFID reader to grant access</div>
+  </div>
+
+  <div class="timer-box" id="timerBox">
+    <div class="timer-lbl">AUTH WINDOW OPEN</div>
+    <div class="timer-val" id="timerVal">30</div>
+    <div class="timer-bar-bg"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
+  </div>
+
+  <div class="relay-sec">
+    <div class="relay-hdr">// RELAY MESSAGE TO AREA</div>
+    <div class="relay-btns">
+      <button class="rbtn" onclick="selRelay(this,'Routine check-up')"><span class="ricon">🔍</span>Routine check-up</button>
+      <button class="rbtn" onclick="selRelay(this,'Scheduled maintenance')"><span class="ricon">🔧</span>Scheduled maintenance</button>
+      <button class="rbtn" onclick="selRelay(this,'Emergency repair')"><span class="ricon">⚠️</span>Emergency repair</button>
+      <button class="rbtn" onclick="selRelay(this,'Safety inspection')"><span class="ricon">🛡️</span>Safety inspection</button>
+    </div>
+    <button class="send-btn" id="sendBtn" onclick="sendRelay()">RELAY TO ALL RESIDENTS →</button>
+  </div>
+
+  <div class="inc-sec">
+    <div class="inc-hdr">
+      <span class="inc-title">// INCOMING ALERTS</span>
+      <div class="dot" style="color:var(--grn)"></div>
+    </div>
+    <div class="inc-feed" id="incFeed">
+      <div class="inc-empty">Listening for transformer events...</div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="../gg-engine.js"></script>
+<script>
+let selMsg=null, authActive=false, timerInt=null;
+
+function tapKey(){
+  if(authActive)return;
+  authActive=true;
+  const zone=document.getElementById('nfcZone');
+  const icon=document.getElementById('nfcIcon');
+  const title=document.getElementById('nfcTitle');
+  const sub=document.getElementById('nfcSub');
+  zone.classList.add('authed');
+  icon.textContent='✅';
+  title.textContent='AUTHENTICATED';
+  sub.textContent='Tech EK2847 · Access granted · 30s window';
+  document.getElementById('timerBox').classList.add('show');
+  GG.sendRFID('EK2847');
+  showToast('✓ Auth broadcast to all devices');
+  let s=30;
+  timerInt=setInterval(()=>{
+    s--;
+    document.getElementById('timerVal').textContent=s;
+    document.getElementById('timerBar').style.width=(s/30*100)+'%';
+    if(s<=0){
+      clearInterval(timerInt);authActive=false;
+      zone.classList.remove('authed');
+      icon.textContent='📲';title.textContent='TAP TO AUTHENTICATE';
+      sub.textContent='Hold near transformer RFID reader to grant access';
+      document.getElementById('timerBox').classList.remove('show');
+      document.getElementById('timerBar').style.width='100%';
+    }
+  },1000);
+}
+
+function selRelay(btn,msg){
+  document.querySelectorAll('.rbtn').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');selMsg=msg;
+  document.getElementById('sendBtn').classList.add('show');
+}
+
+function sendRelay(){
+  if(!selMsg)return;
+  GG.sendRelay(selMsg,'EK2847');
+  showToast('✓ "'+selMsg+'" relayed to zone');
+  document.querySelectorAll('.rbtn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('sendBtn').classList.remove('show');
+  selMsg=null;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function addInc(ev){
+  const feed=document.getElementById('incFeed');
+  const ph=feed.querySelector('.inc-empty');if(ph)ph.remove();
+  const SEV={CRITICAL:'crit',HIGH:'warn',INFO:'info',crit:'crit',warn:'warn',sec:'sec',info:'info'};
+  const sev=SEV[(ev.severity||ev.color||'').toUpperCase()]||SEV[(ev.severity||ev.color||'').toLowerCase()]||'info';
+  const el=document.createElement('div');el.className='inc-item '+sev;
+  el.innerHTML=`<div class="inc-type ${sev}">${ev.emoji||'⚡'} ${(ev.alertType||'').replace(/_/g,' ')}</div><div class="inc-det">${ev.message||''}</div><div class="inc-meta">${ev.deviceId||'—'} · ${ev.timestamp||''}</div>`;
+  feed.insertBefore(el,feed.firstChild);
+  if((sev==='crit'||sev==='sec')&&navigator.vibrate)navigator.vibrate([200,100,200]);
+}
+
+GG.on(ev=>{if(ev.alertType!=='RFID_AUTHENTICATED'&&ev.alertType!=='RELAY_MESSAGE')addInc(ev);});
+</script>
+</body>
+</html>

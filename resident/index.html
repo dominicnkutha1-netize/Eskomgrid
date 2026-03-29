@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>GridGuard · My Area</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f4f8;--surf:#ffffff;--surf2:#f8fafc;
+  --bord:#e2e8f2;--bord2:#cbd5e1;
+  --grn:#16a34a;--grnbg:#f0fdf4;--grnbord:#86efac;
+  --red:#dc2626;--redbg:#fef2f2;--redbord:#fca5a5;
+  --amb:#d97706;--ambbg:#fffbeb;--ambbord:#fde68a;
+  --pur:#7c3aed;--purbg:#f5f3ff;--purbord:#c4b5fd;
+  --blue:#1d4ed8;--bluebg:#eff6ff;
+  --tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;
+  --body:'Nunito',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --r:14px;--r2:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--body);max-width:430px;margin:0 auto;}
+
+/* STATUS BAR MOCK */
+.statusbar{background:var(--surf);padding:10px 18px 0;display:flex;justify-content:space-between;font-size:11px;font-weight:700;color:var(--tx);}
+.sb-right{display:flex;gap:4px;align-items:center;font-size:12px;}
+
+/* HEADER */
+.app-hdr{background:var(--surf);padding:8px 18px 14px;border-bottom:1px solid var(--bord);}
+.app-hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.app-name{font-size:20px;font-weight:900;color:var(--tx);}
+.app-name span{color:var(--grn);}
+.live-chip{display:flex;align-items:center;gap:5px;background:var(--grnbg);border:1px solid var(--grnbord);color:var(--grn);font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:blink 1.4s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.location-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx2);}
+.location-row svg{flex-shrink:0;}
+
+/* MAIN SCROLL */
+.scroll{overflow-y:auto;height:calc(100vh - 140px);padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+
+/* ACTIVE ALERT CARD */
+.alert-card{border-radius:var(--r2);overflow:hidden;animation:popin .4s cubic-bezier(.34,1.56,.64,1);display:none;}
+.alert-card.show{display:block;}
+@keyframes popin{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.alert-card.crit{border:2px solid var(--redbord);}
+.alert-card.warn{border:2px solid var(--ambbord);}
+.alert-card.sec{border:2px solid var(--purbord);}
+.alert-card.info{border:2px solid var(--grnbord);}
+.alert-top{padding:16px 16px 12px;display:flex;gap:12px;align-items:flex-start;}
+.alert-top.crit{background:var(--redbg);}
+.alert-top.warn{background:var(--ambbg);}
+.alert-top.sec{background:var(--purbg);}
+.alert-top.info{background:var(--grnbg);}
+.alert-emoji{font-size:32px;line-height:1;flex-shrink:0;}
+.alert-title{font-size:15px;font-weight:800;margin-bottom:4px;}
+.alert-title.crit{color:var(--red);}
+.alert-title.warn{color:var(--amb);}
+.alert-title.sec{color:var(--pur);}
+.alert-title.info{color:var(--grn);}
+.alert-body{font-size:13px;color:var(--tx2);line-height:1.55;}
+.alert-footer{background:var(--surf);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.ticket-badge{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--grn);}
+.ticket-badge svg{width:14px;height:14px;}
+.alert-time{font-family:var(--mono);font-size:10px;color:var(--tx3);}
+
+/* MAP CARD */
+.map-card{background:var(--surf);border-radius:var(--r2);overflow:hidden;border:1px solid var(--bord);display:none;}
+.map-card.show{display:block;}
+.map-hdr{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bord);}
+.map-hdr-title{font-size:13px;font-weight:700;}
+.map-hdr-sub{font-size:11px;color:var(--tx3);font-family:var(--mono);}
+.map-area{height:180px;background:linear-gradient(140deg,#d1fae5,#a7f3d0 40%,#6ee7b7 100%);position:relative;overflow:hidden;}
+.map-grid-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(0,0,0,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.06) 1px,transparent 1px);background-size:32px 32px;}
+.map-road-h{position:absolute;left:0;right:0;top:55%;height:7px;background:rgba(255,255,255,.7);}
+.map-road-v{position:absolute;top:0;bottom:0;left:38%;width:6px;background:rgba(255,255,255,.6);}
+.map-rd-label{position:absolute;font-size:9px;font-weight:700;color:rgba(0,0,0,.4);font-family:var(--mono);}
+.map-pin{position:absolute;top:50%;left:40%;transform:translate(-50%,-100%);font-size:30px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.3));animation:mapbounce .8s ease infinite alternate;}
+@keyframes mapbounce{from{transform:translate(-50%,-100%)}to{transform:translate(-50%,-115%)}}
+.map-pulse{position:absolute;top:50%;left:40%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;border:3px solid;opacity:0;animation:mappulse 1.8s infinite;}
+@keyframes mappulse{0%{opacity:.8;transform:translate(-50%,-50%) scale(.3)}100%{opacity:0;transform:translate(-50%,-50%) scale(2.5)}}
+.map-coords{position:absolute;bottom:8px;right:10px;background:rgba(255,255,255,.85);border-radius:5px;padding:3px 7px;font-family:var(--mono);font-size:9px;color:var(--tx2);}
+.map-zone{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.85);border-radius:6px;padding:4px 9px;font-size:10px;font-weight:700;color:var(--grn);}
+
+/* PUSH NOTIFICATION MOCK */
+.push-card{background:var(--surf);border-radius:var(--r2);border:1px solid var(--bord);padding:16px;display:none;}
+.push-card.show{display:block;}
+.push-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.push-title{font-size:13px;font-weight:700;}
+.push-sub{font-size:11px;color:var(--tx3);}
+.phone-frame{background:#18181b;border-radius:16px;padding:14px;}
+.push-notif{background:#27272a;border-radius:12px;padding:11px 13px;display:flex;gap:10px;}
+.push-app-icon{width:34px;height:34px;background:#c8102e;border-radius:9px;display:grid;place-items:center;font-size:17px;flex-shrink:0;}
+.push-notif-title{font-size:12px;font-weight:700;color:#fff;}
+.push-notif-body{font-size:11px;color:#a1a1aa;margin-top:3px;line-height:1.5;}
+.push-notif-time{font-size:10px;color:#52525b;margin-top:4px;font-family:var(--mono);}
+
+/* RELAY MESSAGE */
+.relay-card{background:var(--bluebg);border-radius:var(--r2);border:1px solid #bfdbfe;padding:16px;display:none;}
+.relay-card.show{display:block;animation:popin .3s ease;}
+.relay-lbl{font-size:10px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+.relay-msg{font-size:16px;font-weight:800;color:var(--blue);}
+.relay-who{font-size:11px;color:var(--tx3);margin-top:5px;font-family:var(--mono);}
+
+/* HISTORY */
+.hist-card{background:var(--surf);border-radius:var(--r2);border:1px solid var(--bord);overflow:hidden;}
+.hist-hdr{padding:13px 16px;border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;}
+.hist-title{font-size:13px;font-weight:800;}
+.hist-count{font-size:11px;color:var(--tx3);font-family:var(--mono);}
+.hist-list{padding:10px;display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.hist-item{display:flex;gap:10px;padding:10px 11px;border-radius:10px;border-left:3px solid var(--bord2);background:var(--surf2);animation:slid .3s ease;}
+@keyframes slid{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.hist-item.crit{border-left-color:var(--red);}
+.hist-item.warn{border-left-color:var(--amb);}
+.hist-item.sec{border-left-color:var(--pur);}
+.hist-item.info{border-left-color:var(--grn);}
+.hi-icon{font-size:20px;flex-shrink:0;}
+.hi-type{font-size:12px;font-weight:700;color:var(--tx);}
+.hi-det{font-size:11px;color:var(--tx2);margin-top:2px;line-height:1.4;}
+.hi-meta{font-size:10px;color:var(--tx3);margin-top:4px;font-family:var(--mono);}
+.hi-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-right:5px;}
+.hi-badge.crit{background:var(--redbg);color:var(--red);}
+.hi-badge.warn{background:var(--ambbg);color:var(--amb);}
+.hi-badge.sec{background:var(--purbg);color:var(--pur);}
+.hi-badge.info{background:var(--grnbg);color:var(--grn);}
+.hist-empty{padding:24px;text-align:center;font-size:12px;color:var(--tx3);}
+
+/* SHAKE ANIMATION */
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.shake{animation:shake .5s ease;}
+</style>
+</head>
+<body>
+
+<div class="statusbar">
+  <span id="sttime">9:41</span>
+  <div class="sb-right">📶 🔋</div>
+</div>
+
+<div class="app-hdr">
+  <div class="app-hdr-top">
+    <div class="app-name">Grid<span>Guard</span></div>
+    <div class="live-chip"><div class="live-dot"></div>LIVE</div>
+  </div>
+  <div class="location-row">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+    Dube St, Soweto Zone 4 · 24 units monitored
+  </div>
+</div>
+
+<div class="scroll" id="scroll">
+
+  <!-- Active Alert -->
+  <div class="alert-card" id="alertCard">
+    <div class="alert-top" id="alertTop">
+      <div class="alert-emoji" id="alertEmoji">⚡</div>
+      <div>
+        <div class="alert-title" id="alertTitle">Alert</div>
+        <div class="alert-body" id="alertBody">—</div>
+      </div>
+    </div>
+    <div class="alert-footer">
+      <div class="ticket-badge">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        <span id="ticketBadge">Eskom notified — ticket raised</span>
+      </div>
+      <div class="alert-time" id="alertTime">—</div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-card" id="mapCard">
+    <div class="map-hdr">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--red)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+      <div>
+        <div class="map-hdr-title" id="mapTitle">Transformer Location</div>
+        <div class="map-hdr-sub" id="mapCoordSub">-26.2485, 27.8543 · TRF-SW04-A</div>
+      </div>
+    </div>
+    <div class="map-area">
+      <div class="map-grid-lines"></div>
+      <div class="map-road-h"></div>
+      <div class="map-road-v"></div>
+      <div class="map-rd-label" style="top:52%;left:2%">DUBE ST</div>
+      <div class="map-rd-label" style="top:5%;left:36%;writing-mode:vertical-rl">KUMALO ST</div>
+      <div class="map-pulse" id="mapPulse" style="border-color:var(--red);color:var(--red)"></div>
+      <div class="map-pin" id="mapPin">🔴</div>
+      <div class="map-zone">Soweto Zone 4</div>
+      <div class="map-coords" id="mapCoords">-26.2485, 27.8543</div>
+    </div>
+  </div>
+
+  <!-- Push notification mock -->
+  <div class="push-card" id="pushCard">
+    <div class="push-hdr">
+      <div>
+        <div class="push-title">📱 Push notification sent</div>
+        <div class="push-sub">Everyone in Soweto Zone 4 received this alert</div>
+      </div>
+    </div>
+    <div class="phone-frame">
+      <div class="push-notif">
+        <div class="push-app-icon">⚡</div>
+        <div>
+          <div class="push-notif-title" id="pushTitle">GridGuard</div>
+          <div class="push-notif-body" id="pushBody">—</div>
+          <div class="push-notif-time" id="pushTime">now</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Relay message -->
+  <div class="relay-card" id="relayCard">
+    <div class="relay-lbl">📡 Message from Eskom Technician</div>
+    <div class="relay-msg" id="relayMsg">—</div>
+    <div class="relay-who" id="relayWho">—</div>
+  </div>
+
+  <!-- History -->
+  <div class="hist-card">
+    <div class="hist-hdr">
+      <div class="hist-title">Alert History</div>
+      <div class="hist-count" id="histCount">0 alerts</div>
+    </div>
+    <div class="hist-list" id="histList">
+      <div class="hist-empty">Listening for updates in your area...</div>
+    </div>
+  </div>
+
+</div><!-- scroll -->
+
+<script src="../gg-engine.js"></script>
+<script>
+// Clock
+setInterval(()=>{
+  const d=new Date();
+  document.getElementById('sttime').textContent=d.getHours()+':'+(d.getMinutes()<10?'0':'')+d.getMinutes();
+},1000);
+
+let hcount=0;
+const SEV={CRITICAL:'crit',HIGH:'warn',MEDIUM:'warn',INFO:'info',crit:'crit',warn:'warn',sec:'sec',info:'info'};
+function getSev(ev){const s=(ev.severity||ev.color||'');return SEV[s.toUpperCase()]||SEV[s.toLowerCase()]||'info';}
+
+function show(id){document.getElementById(id).classList.add('show');}
+
+function handleEvent(ev) {
+  if(!ev||!ev.alertType)return;
+
+  // Skip relay/RFID — handle separately
+  if(ev.alertType==='RELAY_MESSAGE'){ handleRelay(ev); return; }
+
+  const sev=getSev(ev);
+  const ignoreTypes=['RFID_AUTHENTICATED'];
+  if(!ignoreTypes.includes(ev.alertType)){
+
+    // Alert card
+    const card=document.getElementById('alertCard');
+    card.className='alert-card show '+sev;
+    document.getElementById('alertTop').className='alert-top '+sev;
+    document.getElementById('alertEmoji').textContent=ev.emoji||'⚡';
+    document.getElementById('alertTitle').className='alert-title '+sev;
+    document.getElementById('alertTitle').textContent=(ev.residentTitle||ev.alertType||'').replace(/^[^\s]+\s/,'');
+    document.getElementById('alertBody').textContent=ev.residentBody||ev.message||'—';
+    document.getElementById('ticketBadge').textContent='Ticket '+(ev.ticketId||'raised')+' · Eskom notified';
+    document.getElementById('alertTime').textContent=ev.timestamp||'';
+
+    // Map
+    show('mapCard');
+    const pinMap={crit:'🔴',warn:'🟡',sec:'🟣',info:'🟢'};
+    document.getElementById('mapPin').textContent=pinMap[sev]||'🔴';
+    document.getElementById('mapPulse').style.borderColor=sev==='crit'?'var(--red)':sev==='warn'?'var(--amb)':sev==='sec'?'var(--pur)':'var(--grn)';
+    document.getElementById('mapTitle').textContent=(ev.deviceType||'Transformer')+' — '+(ev.deviceId||'');
+    document.getElementById('mapCoordSub').textContent=(ev.lat||'-26.2485')+', '+(ev.lng||'27.8543')+' · '+(ev.address||'');
+    document.getElementById('mapCoords').textContent=(ev.lat||'-26.2485')+', '+(ev.lng||'27.8543');
+
+    // Push notif
+    show('pushCard');
+    document.getElementById('pushTitle').textContent=ev.residentTitle||'GridGuard Alert';
+    document.getElementById('pushBody').textContent=ev.residentBody||ev.message||'—';
+    document.getElementById('pushTime').textContent='Delivered '+ev.timestamp+' · Zone 4';
+
+    // Shake + vibrate on critical
+    if(sev==='crit'||sev==='sec'){
+      document.body.classList.add('shake');
+      setTimeout(()=>document.body.classList.remove('shake'),600);
+      if(navigator.vibrate)navigator.vibrate([300,100,300,100,300]);
+    } else if(sev==='warn'){
+      if(navigator.vibrate)navigator.vibrate([200,100,200]);
+    }
+  }
+
+  addHistory(ev, sev);
+}
+
+function handleRelay(ev) {
+  show('relayCard');
+  document.getElementById('relayMsg').textContent=ev.message||'—';
+  document.getElementById('relayWho').textContent='Tech '+(ev.techId||'unknown')+' · '+(ev.timestamp||'');
+  addHistory(ev,'info');
+}
+
+function addHistory(ev, sev) {
+  hcount++;
+  document.getElementById('histCount').textContent=hcount+' alert'+(hcount!==1?'s':'');
+  const list=document.getElementById('histList');
+  const ph=list.querySelector('.hist-empty');if(ph)ph.remove();
+  const el=document.createElement('div');el.className='hist-item '+sev;
+  el.innerHTML=`<div class="hi-icon">${ev.emoji||'⚡'}</div><div><div class="hi-type">${(ev.alertType||'').replace(/_/g,' ')}</div><div class="hi-det">${ev.residentBody||ev.message||''}</div><div class="hi-meta"><span class="hi-badge ${sev}">${sev.toUpperCase()}</span>${ev.deviceId||''} · ${ev.timestamp||''}</div></div>`;
+  list.insertBefore(el,list.firstChild);
+
+  // Scroll to top
+  document.getElementById('scroll').scrollTo({top:0,behavior:'smooth'});
+}
+
+GG.on(handleEvent);
+</script>
+</body>
+</html>
