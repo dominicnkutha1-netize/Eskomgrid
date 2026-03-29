@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridGuard AI ⚡🛡️</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#07090f; --s1:#0d1117; --s2:#131922; --s3:#1a2233;
+  --bord:#1f2d42; --bord2:#253350;
+  --grn:#00e676; --grn2:#00c853; --grnd:#031508;
+  --red:#ff1744; --redd:#1f0008;
+  --amb:#ffab00; --ambd:#1f1200;
+  --pur:#d500f9; --purd:#200030;
+  --blue:#2979ff; --bluebg:#0a1628;
+  --tx:#dde4f0; --tx2:#7a8fa8; --tx3:#3d5166;
+  --mono:'JetBrains Mono',monospace;
+  --display:'Syne',sans-serif;
+  --body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100vh;background:var(--bg);color:var(--tx);font-family:var(--body);overflow-x:hidden;}
+
+/* SCANLINES */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:9990;}
+
+/* ─── NAV ─────────────────────────────────────── */
+.nav{background:linear-gradient(90deg,#060912,#0e1628);border-bottom:2px solid var(--blue);padding:7px 14px;display:flex;align-items:center;gap:6px;position:sticky;top:0;z-index:1000;flex-wrap:wrap;}
+.nav-logo{font-family:var(--display);font-size:1.1em;color:var(--grn);letter-spacing:1px;margin-right:6px;white-space:nowrap;display:flex;align-items:center;gap:7px;}
+.nav-bolt{width:28px;height:28px;background:var(--grn2);border-radius:7px;display:grid;place-items:center;font-size:14px;}
+.nbtn{padding:6px 12px;border:1px solid rgba(255,255,255,.1);border-radius:7px;background:rgba(255,255,255,.03);color:var(--tx2);cursor:pointer;font-size:0.76em;transition:all .25s;white-space:nowrap;font-family:var(--body);}
+.nbtn:hover{border-color:rgba(255,255,255,.3);color:white;}
+.nbtn.active{font-weight:700;color:white;}
+.nbtn.c-ctrl.active{background:rgba(255,68,68,.15);border-color:#ff4444;}
+.nbtn.c-field.active{background:rgba(255,171,0,.15);border-color:#ffab00;}
+.nbtn.c-res.active{background:rgba(0,200,83,.15);border-color:#00c853;}
+.nbtn.c-sim.active{background:rgba(0,170,255,.15);border-color:#00aaff;}
+.nbtn.c-hw.active{background:rgba(213,0,249,.15);border-color:#d500f9;}
+.nbtn.c-pres.active{background:rgba(255,109,0,.15);border-color:#ff6d00;}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--grn2);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.nav-clock{font-family:var(--mono);font-size:.73em;color:var(--blue);}
+.reset-btn{padding:4px 9px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.2);border-radius:5px;color:#ff6666;cursor:pointer;font-size:.7em;}
+
+/* ─── VIEWS ───────────────────────────────────── */
+.view{display:none;padding:16px;max-width:1500px;margin:0 auto;}
+.view.active{display:block;}
+
+/* ─── SIREN OVERLAY ───────────────────────────── */
+#siren-overlay{position:fixed;inset:0;z-index:9995;pointer-events:none;transition:all .3s;}
+#siren-overlay.siren-active{pointer-events:all;}
+.siren-flash{position:fixed;inset:0;z-index:9993;pointer-events:none;opacity:0;}
+.siren-flash.red{animation:sFlashR 1s infinite;}
+.siren-flash.blue{animation:sFlashB 1s infinite;}
+@keyframes sFlashR{0%,100%{background:rgba(255,23,68,0);} 25%,75%{background:rgba(255,23,68,.18);}}
+@keyframes sFlashB{0%,100%{background:rgba(41,121,255,0);} 50%{background:rgba(41,121,255,.15);}}
+
+/* ─── POPUP NOTIFICATIONS ─────────────────────── */
+.popup-container{position:fixed;top:70px;right:16px;z-index:9998;display:flex;flex-direction:column;gap:8px;max-width:340px;pointer-events:none;}
+.popup{background:var(--s1);border-radius:14px;padding:0;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.6);animation:popIn .4s cubic-bezier(.34,1.56,.64,1) forwards;pointer-events:all;border:1px solid rgba(255,255,255,.05);}
+.popup.dying{animation:popOut .35s ease forwards;}
+@keyframes popIn{from{opacity:0;transform:translateX(120px) scale(.8)}to{opacity:1;transform:translateX(0) scale(1)}}
+@keyframes popOut{from{opacity:1;transform:translateX(0) scale(1)}to{opacity:0;transform:translateX(120px) scale(.8)}}
+.popup-header{padding:10px 14px 8px;display:flex;align-items:center;gap:8px;}
+.popup-header.CRITICAL,.popup-header.TAMPER,.popup-header.BRIDGE{background:linear-gradient(135deg,rgba(255,23,68,.2),rgba(255,23,68,.05));}
+.popup-header.HIGH,.popup-header.OVERLOAD,.popup-header.BLOWN,.popup-header.TRIPPED{background:linear-gradient(135deg,rgba(255,171,0,.2),rgba(255,171,0,.05));}
+.popup-header.INFO,.popup-header.RESOLVED,.popup-header.MAINTENANCE{background:linear-gradient(135deg,rgba(0,200,83,.15),rgba(0,200,83,.03));}
+.popup-sev{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 8px;border-radius:12px;}
+.popup-sev.CRITICAL,.popup-sev.TAMPER,.popup-sev.BRIDGE{background:var(--redd);color:var(--red);border:1px solid var(--red);}
+.popup-sev.HIGH,.popup-sev.BLOWN,.popup-sev.OVERLOAD{background:var(--ambd);color:var(--amb);border:1px solid var(--amb);}
+.popup-sev.TRIPPED{background:var(--ambd);color:var(--amb);border:1px solid var(--amb);}
+.popup-sev.INFO,.popup-sev.RESOLVED{background:var(--grnd);color:var(--grn);border:1px solid var(--grn2);}
+.popup-sev.MAINTENANCE{background:var(--bluebg);color:var(--blue);border:1px solid var(--blue);}
+.popup-icon{font-size:22px;}
+.popup-title{font-size:.88em;font-weight:700;color:var(--tx);}
+.popup-body{padding:0 14px 10px;font-size:.8em;color:var(--tx2);line-height:1.5;}
+.popup-footer{padding:6px 14px 10px;display:flex;align-items:center;justify-content:space-between;}
+.popup-tf{font-family:var(--mono);font-size:.72em;color:var(--tx3);}
+.popup-time{font-family:var(--mono);font-size:.7em;color:var(--tx3);}
+.popup-close{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:.9em;padding:2px 6px;border-radius:4px;transition:all .15s;}
+.popup-close:hover{color:var(--tx);background:rgba(255,255,255,.05);}
+.popup-ticket{margin:4px 14px 10px;background:var(--grnd);border:1px solid var(--grn2);border-radius:6px;padding:5px 10px;font-family:var(--mono);font-size:.72em;color:var(--grn);}
+
+/* ─── SIREN MODAL ─────────────────────────────── */
+.siren-modal{position:fixed;inset:0;z-index:9996;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:none;}
+.siren-modal.show{display:flex;}
+.siren-box{background:var(--s1);border-radius:20px;padding:32px 36px;text-align:center;max-width:420px;border:2px solid var(--red);box-shadow:0 0 60px rgba(255,23,68,.3);animation:sirenPulse 1s infinite;}
+@keyframes sirenPulse{0%,100%{box-shadow:0 0 40px rgba(255,23,68,.3)}50%{box-shadow:0 0 80px rgba(255,23,68,.6),0 0 120px rgba(255,23,68,.2)}}
+.siren-icon{font-size:60px;animation:sirenSpin 1.5s linear infinite;}
+@keyframes sirenSpin{0%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}100%{transform:rotate(-10deg)}}
+.siren-title{font-family:var(--display);font-size:1.6em;color:var(--red);margin:12px 0 6px;letter-spacing:2px;}
+.siren-sub{font-family:var(--mono);font-size:.9em;color:var(--tx2);margin-bottom:8px;}
+.siren-detail{font-size:.85em;color:var(--tx);line-height:1.6;margin-bottom:20px;}
+.siren-tf{font-family:var(--mono);font-size:.8em;color:var(--amb);margin-bottom:16px;}
+.siren-dismiss{padding:11px 28px;background:var(--red);border:none;border-radius:10px;color:white;font-weight:700;font-size:.95em;cursor:pointer;transition:all .2s;}
+.siren-dismiss:hover{background:#ff4444;transform:scale(1.04);}
+
+/* ─── HOME ────────────────────────────────────── */
+#home-view{text-align:center;padding-top:28px;}
+.home-icon{font-size:62px;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.home-title{font-family:var(--display);font-size:2.4em;background:linear-gradient(90deg,#00d4ff,#00ff88,#00d4ff);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shine 3s linear infinite;margin:8px 0;}
+@keyframes shine{0%{background-position:0% center}100%{background-position:200% center}}
+.home-sub{color:var(--tx2);font-size:1em;margin-bottom:32px;}
+.home-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;max-width:1100px;margin:0 auto 32px;}
+.hcard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:20px 14px;cursor:pointer;transition:all .3s;text-align:center;position:relative;overflow:hidden;}
+.hcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--hcc);transition:all .3s;}
+.hcard:hover{transform:translateY(-4px);border-color:var(--hcc);box-shadow:0 8px 30px rgba(0,0,0,.3),0 0 20px var(--hcg);}
+.hcard.h1{--hcc:#ff4444;--hcg:rgba(255,68,68,.12);}
+.hcard.h2{--hcc:#ffaa00;--hcg:rgba(255,170,0,.12);}
+.hcard.h3{--hcc:#00cc66;--hcg:rgba(0,204,102,.12);}
+.hcard.h4{--hcc:#00aaff;--hcg:rgba(0,170,255,.12);}
+.hcard.h5{--hcc:#e040fb;--hcg:rgba(224,64,251,.12);}
+.hcard.h6{--hcc:#ff6d00;--hcg:rgba(255,109,0,.12);}
+.hcard .hi{font-size:32px;margin-bottom:8px;}
+.hcard .ht{font-size:.95em;font-weight:700;margin-bottom:3px;}
+.hcard .hd{font-size:.73em;color:var(--tx2);}
+.hcard .hb{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.64em;font-weight:700;margin-top:7px;background:rgba(255,255,255,.05);color:var(--hcc);}
+.home-team{margin-top:24px;padding:16px;background:rgba(255,255,255,.02);border-radius:12px;max-width:700px;margin-left:auto;margin-right:auto;}
+.home-team h3{color:var(--blue);margin-bottom:7px;font-size:.95em;}
+.home-team p{color:var(--tx2);font-size:.82em;line-height:1.8;}
+
+/* ─── STATS ───────────────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px;}
+.scard{background:var(--s1);border:1px solid var(--bord);border-radius:10px;padding:12px;text-align:center;border-top:3px solid var(--scc);position:relative;overflow:hidden;}
+.scard::after{content:'';position:absolute;inset:0;background:var(--scc);opacity:.03;}
+.scard .si{font-size:1.3em;margin-bottom:3px;}
+.scard .sv{font-size:1.7em;font-weight:700;font-family:var(--mono);color:var(--scc);}
+.scard .sl{font-size:.68em;color:var(--tx3);letter-spacing:1px;}
+
+/* ─── CONTROL ROOM LAYOUT ─────────────────────── */
+.ctrl-grid{display:grid;grid-template-columns:1.1fr 380px;gap:14px;}
+.ctrl-left{display:flex;flex-direction:column;gap:12px;}
+.ctrl-right{display:flex;flex-direction:column;gap:12px;}
+
+/* ─── MAP ─────────────────────────────────────── */
+.map-card{background:var(--s1);border:1px solid var(--bord);border-radius:14px;overflow:hidden;}
+.map-header{background:var(--s2);padding:12px 16px;border-bottom:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.map-header-l{display:flex;align-items:center;gap:10px;}
+.map-title{font-family:var(--display);font-size:1em;color:var(--grn);}
+.map-sub{font-size:.75em;color:var(--tx3);font-family:var(--mono);}
+.map-filters{display:flex;gap:6px;}
+.mfbtn{padding:4px 10px;border-radius:20px;border:1px solid var(--bord);background:transparent;color:var(--tx2);font-size:.7em;cursor:pointer;transition:all .15s;font-family:var(--mono);}
+.mfbtn.active,.mfbtn:hover{border-color:var(--grn2);color:var(--grn);}
+.map-area{position:relative;height:420px;background:#040810;overflow:hidden;}
+.map-area svg{width:100%;height:100%;}
+
+/* ─── TRANSFORMER CARD ICONS ─────────────────── */
+.tf-node{cursor:pointer;transition:all .3s;}
+.tf-node:hover .tf-body{filter:brightness(1.3);}
+.tf-label{font-family:'JetBrains Mono',monospace;font-size:8px;fill:#8899aa;pointer-events:none;}
+.tf-label.alert{fill:#ffab00;font-weight:bold;}
+.tf-label.critical{fill:#ff1744;font-weight:bold;animation:labelBlink .8s infinite;}
+@keyframes labelBlink{0%,100%{opacity:1}50%{opacity:.3}}
+.tf-status-ring{animation:ringPulse 1.5s infinite;}
+@keyframes ringPulse{0%{stroke-opacity:.8;r:14}100%{stroke-opacity:0;r:22}}
+
+/* City section tabs */
+.city-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.citytab{padding:5px 14px;border-radius:20px;border:1px solid var(--bord);background:transparent;color:var(--tx2);font-size:.75em;cursor:pointer;transition:all .2s;font-family:var(--mono);}
+.citytab.active{border-color:var(--blue);color:var(--blue);background:var(--bluebg);}
+
+/* ─── PANELS ──────────────────────────────────── */
+.panel{background:var(--s1);border:1px solid var(--bord);border-radius:12px;padding:13px;overflow:hidden;}
+.phdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bord);}
+.phdr h3{font-size:.9em;font-family:var(--display);}
+.phdr .bdg{background:rgba(255,255,255,.06);padding:2px 8px;border-radius:6px;font-size:.7em;font-family:var(--mono);}
+.pbody{max-height:360px;overflow-y:auto;}
+
+/* ─── TRANSFORMER LIST ITEMS ─────────────────── */
+.tfc{background:var(--s2);border:1px solid var(--bord);border-radius:9px;padding:10px;margin-bottom:6px;border-left:4px solid var(--tc);display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;transition:all .2s;cursor:pointer;}
+.tfc:hover{background:rgba(255,255,255,.03);border-right:1px solid var(--tc);}
+.tfc[data-s="ONLINE"]{--tc:#00c853;}
+.tfc[data-s="OFFLINE"],.tfc[data-s="BLOWN"]{--tc:#ff1744;}
+.tfc[data-s="TRIPPED"]{--tc:#ffab00;}
+.tfc[data-s="MAINTENANCE"]{--tc:#2979ff;}
+.tfdot{width:10px;height:10px;border-radius:50%;background:var(--tc);box-shadow:0 0 8px var(--tc);}
+.tfc[data-s="OFFLINE"] .tfdot,.tfc[data-s="BLOWN"] .tfdot,.tfc[data-s="TRIPPED"] .tfdot{animation:blink .8s infinite;}
+.tfn{font-size:.85em;font-weight:600;}
+.tfl{font-size:.7em;color:var(--tx2);margin-top:2px;}
+.tfcity{font-family:var(--mono);font-size:.65em;color:var(--tx3);}
+.tfnums{display:flex;gap:5px;}
+.tfnum{background:rgba(0,0,0,.3);padding:3px 7px;border-radius:5px;text-align:center;}
+.tfnum .v{font-family:var(--mono);font-size:.78em;font-weight:700;color:var(--blue);}
+.tfnum .l{font-size:.54em;color:var(--tx3);}
+
+/* ─── ALERTS ──────────────────────────────────── */
+.ali{padding:9px;margin-bottom:5px;border-radius:8px;border-left:3px solid var(--alc);animation:sIn .3s ease;}
+@keyframes sIn{from{transform:translateX(-10px);opacity:0}to{transform:translateX(0);opacity:1}}
+.ali[data-v="CRITICAL"]{--alc:#ff1744;background:rgba(255,23,68,.04);}
+.ali[data-v="HIGH"]{--alc:#ff6d00;background:rgba(255,109,0,.04);}
+.ali[data-v="MEDIUM"]{--alc:#ffab00;background:rgba(255,171,0,.04);}
+.ali[data-v="LOW"]{--alc:#00c853;background:rgba(0,200,83,.04);}
+.ali[data-v="INFO"]{--alc:#2979ff;background:rgba(41,121,255,.04);}
+.alt{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;}
+.als{padding:1px 6px;border-radius:3px;font-size:.6em;font-weight:700;color:white;background:var(--alc);}
+.altm{font-size:.65em;color:var(--tx3);font-family:var(--mono);}
+.alti{font-weight:600;font-size:.82em;}
+.alm{font-size:.72em;color:var(--tx2);}
+
+/* ─── TICKETS ─────────────────────────────────── */
+.tkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:7px;}
+.tkcard{background:var(--s2);border:1px solid var(--bord);border-radius:9px;padding:10px;animation:sIn .3s ease;}
+.tkcard:hover{border-color:var(--bord2);}
+.tkt{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.tkn{font-family:var(--mono);color:var(--blue);font-size:.8em;font-weight:700;}
+.tkst{padding:1px 6px;border-radius:3px;font-size:.6em;font-weight:700;background:rgba(255,68,68,.15);color:#ff4444;}
+.tkb{font-size:.73em;color:var(--tx2);line-height:1.5;}
+.tkb strong{color:var(--tx);}
+
+/* ─── FIELD TECH ──────────────────────────────── */
+.fcont{max-width:500px;margin:0 auto;}
+.rbox{background:var(--s1);border:1px solid var(--bord);border-radius:16px;padding:22px;text-align:center;margin-bottom:13px;}
+.rbi{font-size:48px;animation:pulse 2s infinite;margin-bottom:8px;}
+.rbt{font-size:1.1em;font-weight:700;margin-bottom:3px;}
+.rbs{color:var(--tx2);font-size:.82em;margin-bottom:14px;}
+.rgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.rbtn{background:rgba(255,171,0,.05);border:1px solid rgba(255,171,0,.15);border-radius:10px;padding:11px 7px;color:white;cursor:pointer;transition:all .25s;text-align:center;}
+.rbtn:hover{background:rgba(255,171,0,.12);border-color:var(--amb);transform:translateY(-2px);}
+.rbtn.act{background:rgba(255,171,0,.18);border-color:var(--amb);box-shadow:0 0 12px rgba(255,171,0,.2);}
+.rbtn .rn{font-weight:700;font-size:.78em;}
+.rbtn .rr{font-size:.65em;color:var(--tx2);}
+.rbtn .ri{font-family:var(--mono);font-size:.64em;color:var(--amb);margin-top:2px;}
+.abox{padding:8px;border-radius:8px;text-align:center;margin:9px 0;display:none;font-size:.85em;}
+.abox.show{display:block;}
+.abox.ok{background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.25);color:var(--grn2);}
+.abox.wt{background:rgba(255,171,0,.1);border:1px solid rgba(255,171,0,.25);color:var(--amb);}
+.fform{background:var(--s1);border:1px solid var(--bord);border-radius:16px;padding:18px;display:none;margin-bottom:13px;}
+.fform.show{display:block;animation:sIn .3s ease;}
+.fft{font-size:.95em;font-weight:600;margin-bottom:13px;}
+.fg{margin-bottom:11px;}
+.fg label{display:block;font-size:.77em;color:var(--tx3);margin-bottom:4px;font-family:var(--mono);letter-spacing:.5px;}
+.fg select,.fg textarea{width:100%;padding:9px 11px;background:rgba(0,0,0,.25);border:1px solid var(--bord);border-radius:8px;color:white;font-family:var(--body);font-size:.85em;transition:border-color .2s;}
+.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--blue);}
+.fg select option{background:#0d1117;}
+.fg textarea{min-height:52px;resize:vertical;}
+.agrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:11px;}
+.abtn{padding:9px 4px;background:rgba(255,255,255,.02);border:1px solid var(--bord);border-radius:8px;cursor:pointer;text-align:center;transition:all .25s;color:white;}
+.abtn:hover{border-color:rgba(255,171,0,.3);}
+.abtn.sel{border-color:var(--amb);background:rgba(255,171,0,.08);}
+.abtn .ai{font-size:1.2em;}
+.abtn .al{font-size:.65em;margin-top:1px;}
+.subbtn{width:100%;padding:11px;background:linear-gradient(135deg,#ffab00,#ff6600);border:none;border-radius:10px;color:white;font-size:.9em;font-weight:700;cursor:pointer;transition:all .25s;}
+.subbtn:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(255,171,0,.25);}
+.subbtn:disabled{opacity:.35;cursor:not-allowed;transform:none;}
+.succb{text-align:center;padding:13px;display:none;}
+.succb.show{display:block;animation:sIn .3s ease;}
+
+/* ─── RESIDENT ────────────────────────────────── */
+.rcont{max-width:500px;margin:0 auto;}
+.rasel{background:rgba(0,200,83,.05);border:1px solid rgba(0,200,83,.15);padding:8px 11px;border-radius:9px;color:white;font-size:.82em;width:100%;margin-bottom:11px;font-family:var(--body);}
+.pbox{background:var(--s1);border:1px solid var(--bord);border-radius:16px;padding:20px;text-align:center;margin-bottom:13px;transition:all .5s;}
+.pwi{font-size:40px;margin-bottom:6px;}
+.pwt{font-size:1.25em;font-weight:700;}
+.pwt.on{color:var(--grn);}
+.pwt.off{color:var(--red);}
+.pwt.mt{color:var(--amb);}
+.pwd{color:var(--tx2);font-size:.82em;margin-top:3px;}
+.pws{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:11px;}
+.pws1{background:rgba(0,0,0,.25);padding:8px;border-radius:7px;text-align:center;}
+.pws1 .pv{font-family:var(--mono);font-size:1em;font-weight:700;color:var(--blue);}
+.pws1 .pl{font-size:.6em;color:var(--tx3);margin-top:2px;}
+.ni{background:var(--s1);border:1px solid var(--bord);border-radius:10px;padding:11px;margin-bottom:7px;border-left:4px solid var(--nic);animation:sUp .3s ease;}
+@keyframes sUp{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+.ni[data-t="MAINTENANCE"]{--nic:#2979ff;}
+.ni[data-t="OUTAGE"]{--nic:#ff1744;}
+.ni[data-t="TAMPER"]{--nic:#ff6d00;}
+.ni[data-t="RESOLVED"]{--nic:#00c853;}
+.ni[data-t="INFO"]{--nic:#00d4ff;}
+.ni[data-t="TRIPPED"]{--nic:#ffab00;}
+.nit{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;}
+.nitp{padding:1px 6px;border-radius:3px;font-size:.6em;font-weight:700;background:var(--nic);color:white;}
+.nitm{font-size:.65em;color:var(--tx3);font-family:var(--mono);}
+.niti{font-weight:700;font-size:.86em;margin-bottom:2px;}
+.nim{font-size:.78em;color:var(--tx2);line-height:1.4;}
+.nitk{margin-top:5px;padding:3px 8px;background:rgba(0,200,83,.07);border-radius:4px;font-size:.72em;color:var(--grn2);font-family:var(--mono);}
+
+/* ─── SIMULATOR ───────────────────────────────── */
+.scont{max-width:500px;margin:0 auto;}
+.ssec{background:var(--s1);border:1px solid var(--bord);border-radius:14px;padding:16px;margin-bottom:12px;}
+.ssti{font-size:.88em;color:var(--blue);margin-bottom:11px;font-weight:600;}
+.ssel{width:100%;padding:9px 11px;background:rgba(0,0,0,.25);border:1px solid var(--bord);border-radius:8px;color:white;font-size:.85em;font-family:var(--body);}
+.ssel option{background:#0d1117;}
+.egrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.ebtn{padding:14px 8px;border:1px solid rgba(255,255,255,.06);border-radius:10px;background:rgba(255,255,255,.02);color:white;cursor:pointer;transition:all .25s;text-align:center;font-family:var(--body);}
+.ebtn:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.3);}
+.ebtn:active{transform:scale(.97);}
+.ebtn .ei{font-size:1.4em;margin-bottom:3px;}
+.ebtn .el{font-size:.78em;font-weight:700;}
+.ebtn .ed{font-size:.62em;color:var(--tx2);margin-top:1px;}
+.ebtn.blow{border-color:rgba(255,23,68,.2);}
+.ebtn.blow:hover{background:rgba(255,23,68,.08);border-color:var(--red);}
+.ebtn.trip{border-color:rgba(255,171,0,.2);}
+.ebtn.trip:hover{background:rgba(255,171,0,.08);border-color:var(--amb);}
+.ebtn.tamp{border-color:rgba(255,109,0,.2);}
+.ebtn.tamp:hover{background:rgba(255,109,0,.08);border-color:#ff6d00;}
+.ebtn.vdrop{border-color:rgba(233,30,99,.2);}
+.ebtn.vdrop:hover{background:rgba(233,30,99,.08);border-color:#e91e63;}
+.ebtn.dforce{border-color:rgba(244,67,54,.2);}
+.ebtn.dforce:hover{background:rgba(244,67,54,.08);border-color:#f44336;}
+.ebtn.overl{border-color:rgba(156,39,176,.2);}
+.ebtn.overl:hover{background:rgba(156,39,176,.08);border-color:#9c27b0;}
+.ebtn.bridg{border-color:rgba(255,87,34,.2);}
+.ebtn.bridg:hover{background:rgba(255,87,34,.08);border-color:#ff5722;}
+.ebtn.rest{border-color:rgba(0,200,83,.2);}
+.ebtn.rest:hover{background:rgba(0,200,83,.08);border-color:var(--grn2);}
+.sproc{text-align:center;padding:8px;color:var(--amb);font-size:.82em;display:none;}
+.sproc.show{display:block;}
+.slog{max-height:220px;overflow-y:auto;}
+.sle{padding:6px 9px;border-bottom:1px solid rgba(255,255,255,.03);font-size:.76em;animation:fIn .3s ease;}
+@keyframes fIn{from{opacity:0}to{opacity:1}}
+.sle .st{color:var(--blue);font-family:var(--mono);font-size:.82em;}
+.sle .sm{color:var(--tx2);margin-top:1px;}
+
+/* ─── HARDWARE ────────────────────────────────── */
+.hw-cont{max-width:920px;margin:0 auto;}
+.hw-hero{text-align:center;margin-bottom:22px;}
+.hw-hero h2{font-family:var(--display);font-size:1.8em;color:var(--pur);margin-bottom:5px;}
+.hw-hero p{color:var(--tx2);}
+.hw-section{background:var(--s1);border:1px solid var(--bord);border-radius:14px;padding:20px;margin-bottom:14px;}
+.hw-section h3{font-family:var(--display);font-size:1.05em;color:var(--pur);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bord);}
+.comp-table{width:100%;border-collapse:collapse;font-size:.81em;}
+.comp-table th{background:rgba(213,0,249,.08);color:var(--pur);padding:8px 10px;text-align:left;border-bottom:1px solid rgba(213,0,249,.2);}
+.comp-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);}
+.comp-table tr:hover td{background:rgba(255,255,255,.02);}
+.comp-num{font-family:var(--mono);color:var(--pur);font-weight:700;}
+.comp-name{color:var(--blue);font-weight:700;}
+.comp-spec{color:var(--tx2);font-size:.9em;}
+.comp-pin{font-family:var(--mono);color:var(--amb);}
+.comp-cost{color:var(--grn2);font-weight:700;}
+.total-cost{text-align:right;padding:12px;font-size:1.05em;color:var(--grn2);font-weight:700;border-top:1px solid rgba(0,200,83,.2);margin-top:8px;}
+.wiring-diagram{background:#040810;border:1px solid rgba(213,0,249,.15);border-radius:10px;padding:18px;font-family:var(--mono);font-size:.7em;line-height:1.5;overflow-x:auto;white-space:pre;color:#c0c0c0;}
+.wd-title{color:var(--pur);font-weight:700;}
+.wd-esp{color:var(--blue);}
+.wd-pin{color:var(--amb);}
+.wd-comp{color:var(--grn2);}
+.wd-wire{color:var(--red);}
+.wd-note{color:var(--tx2);}
+.pin-table{width:100%;border-collapse:collapse;font-size:.79em;font-family:var(--mono);}
+.pin-table th{background:rgba(41,121,255,.08);color:var(--blue);padding:7px 9px;text-align:left;}
+.pin-table td{padding:7px 9px;border-bottom:1px solid rgba(255,255,255,.03);}
+.pin-esp{color:var(--amb);font-weight:700;}
+.pin-to{color:var(--grn2);}
+.pin-note{color:var(--tx2);}
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.spec-card{background:rgba(0,0,0,.2);border-radius:9px;padding:13px;}
+.spec-card h4{color:var(--blue);font-size:.9em;margin-bottom:7px;}
+.spec-card p{font-size:.8em;color:var(--tx2);line-height:1.6;}
+.spec-card .sv{color:var(--amb);font-weight:700;font-family:var(--mono);}
+.device-layout{background:#040810;border:1px solid rgba(213,0,249,.15);border-radius:10px;padding:18px;font-family:var(--mono);font-size:.69em;line-height:1.5;overflow-x:auto;white-space:pre;color:#c0c0c0;}
+
+/* ─── PRESENTATION ────────────────────────────── */
+.pres-cont{max-width:940px;margin:0 auto;}
+.pres-note{background:rgba(255,171,0,.07);border:1px solid rgba(255,171,0,.2);border-radius:9px;padding:12px;margin-bottom:14px;font-size:.85em;color:var(--amb);}
+.slide{background:linear-gradient(135deg,rgba(13,13,30,.97),rgba(20,13,40,.97));border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:28px;margin-bottom:18px;min-height:180px;position:relative;overflow:hidden;}
+.slide::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00d4ff,var(--pur),var(--red));}
+.slide-num{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.07);padding:3px 9px;border-radius:10px;font-size:.7em;color:var(--tx2);}
+.slide h2{font-family:var(--display);font-size:1.4em;margin-bottom:14px;color:var(--blue);}
+.slide h3{font-family:var(--display);font-size:1em;color:var(--pur);margin:11px 0 7px;}
+.slide p,.slide li{font-size:.89em;color:#c0c0d0;line-height:1.7;}
+.slide ul{padding-left:20px;}
+.slide li{margin-bottom:5px;}
+.slide .highlight{background:rgba(41,121,255,.08);border-left:3px solid var(--blue);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:.87em;}
+.slide .stat-highlight{display:inline-block;background:rgba(213,0,249,.12);padding:2px 10px;border-radius:6px;color:var(--pur);font-weight:700;font-size:1.05em;margin:2px;}
+.slide .bignum{font-size:1.8em;font-weight:700;color:var(--red);}
+.slide-title-big{font-family:var(--display);font-size:2em;text-align:center;background:linear-gradient(90deg,#00d4ff,#00ff88);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:14px 0;}
+.slide-subtitle{text-align:center;color:var(--tx2);font-size:.95em;font-style:italic;}
+.slide .flow-box{background:rgba(0,0,0,.25);border-radius:9px;padding:13px;margin:9px 0;font-family:var(--mono);font-size:.81em;line-height:1.7;}
+.slide .flow-arrow{color:var(--blue);}
+.slide .flow-good{color:var(--grn2);}
+.slide .flow-bad{color:var(--red);}
+.slide .comparison{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.slide .comp-box{padding:12px;border-radius:9px;}
+.slide .comp-box.bad{background:rgba(255,68,68,.08);border:1px solid rgba(255,68,68,.18);}
+.slide .comp-box.good{background:rgba(0,200,83,.08);border:1px solid rgba(0,200,83,.18);}
+.slide .comp-box h4{margin-bottom:6px;}
+.slide .comp-box.bad h4{color:var(--red);}
+.slide .comp-box.good h4{color:var(--grn2);}
+.slide .team-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:12px;}
+.slide .team-member{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:11px;text-align:center;}
+.slide .team-member .tm-name{font-weight:700;color:var(--blue);font-size:.9em;}
+.slide .team-member .tm-role{color:var(--tx2);font-size:.75em;}
+
+/* ─── EMPTY STATE ─────────────────────────────── */
+.empty-msg{text-align:center;color:var(--tx3);padding:16px;font-size:.82em;font-family:var(--mono);}
+
+/* ─── SIREN CONTROL BAR ───────────────────────── */
+.siren-bar{display:flex;align-items:center;gap:10px;background:var(--redd);border:1px solid var(--red);border-radius:10px;padding:9px 14px;margin-bottom:12px;display:none;animation:sIn .3s ease;}
+.siren-bar.show{display:flex;}
+.siren-bar-icon{font-size:1.3em;animation:sirenSpin 1.5s linear infinite;}
+.siren-bar-text{flex:1;font-size:.83em;font-weight:700;color:var(--red);}
+.siren-bar-tf{font-family:var(--mono);font-size:.75em;color:var(--amb);}
+.siren-stop-btn{padding:5px 14px;background:var(--red);border:none;border-radius:7px;color:white;font-weight:700;font-size:.78em;cursor:pointer;}
+
+/* ─── SCROLLBAR ───────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.01);}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:2px;}
+
+/* ─── RESPONSIVE ──────────────────────────────── */
+@media(max-width:900px){
+  .ctrl-grid{grid-template-columns:1fr;}
+  .spec-grid{grid-template-columns:1fr;}
+  .slide .comparison{grid-template-columns:1fr;}
+  .map-area{height:280px;}
+}
+@media(max-width:600px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .home-title{font-size:1.6em;}
+  .nbtn{padding:5px 8px;font-size:.71em;}
+  .home-cards{grid-template-columns:1fr 1fr;}
+  .wiring-diagram,.device-layout{font-size:.55em;}
+  .slide h2{font-size:1.1em;}
+  .egrid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ░░░ SIREN ELEMENTS ░░░ -->
+<div class="siren-flash red" id="sf-red"></div>
+<div class="siren-flash blue" id="sf-blue"></div>
+
+<div class="siren-modal" id="sirenModal">
+  <div class="siren-box" id="sirenBox">
+    <div class="siren-icon" id="sirenIcon">🚨</div>
+    <div class="siren-title" id="sirenTitle">CRITICAL ALERT</div>
+    <div class="siren-sub" id="sirenSub">GridGuard Security System</div>
+    <div class="siren-detail" id="sirenDetail">—</div>
+    <div class="siren-tf" id="sirenTf">—</div>
+    <button class="siren-dismiss" onclick="dismissSiren()">✕ ACKNOWLEDGE & SILENCE</button>
+  </div>
+</div>
+
+<!-- ░░░ POPUP CONTAINER ░░░ -->
+<div class="popup-container" id="popupContainer"></div>
+
+<!-- ░░░ NAV ░░░ -->
+<nav class="nav">
+  <div class="nav-logo">
+    <div class="nav-bolt">⚡</div>
+    GridGuard AI
+  </div>
+  <button class="nbtn" onclick="showView('home')">🏠</button>
+  <button class="nbtn c-ctrl" onclick="showView('control')">🖥️ Control</button>
+  <button class="nbtn c-field" onclick="showView('field')">🔑 Tech</button>
+  <button class="nbtn c-res" onclick="showView('resident')">🏘️ Resident</button>
+  <button class="nbtn c-sim" onclick="showView('sim')">⚡ Sim</button>
+  <button class="nbtn c-hw" onclick="showView('hardware')">🔧 Hardware</button>
+  <button class="nbtn c-pres" onclick="showView('presentation')">📊 Slides</button>
+  <div class="nav-right">
+    <span class="live-dot"></span>
+    <span class="nav-clock" id="nav-clock"></span>
+    <button class="reset-btn" onclick="resetDemo()">🔄 Reset</button>
+  </div>
+</nav>
+
+<!-- ░░░░░░░░░░░░░░░ HOME ░░░░░░░░░░░░░░░ -->
+<div class="view active" id="home-view">
+  <div style="text-align:center;padding-top:28px;">
+    <div class="home-icon">⚡🛡️</div>
+    <h1 class="home-title">GridGuard AI</h1>
+    <p class="home-sub">Intelligent Transformer Monitoring & Real-Time Tamper Detection</p>
+    <div class="home-cards">
+      <div class="hcard h1" onclick="showView('control')"><div class="hi">🖥️</div><div class="ht">Control Room</div><div class="hd">Eskom real-time dashboard with live map</div><span class="hb">ADMIN</span></div>
+      <div class="hcard h2" onclick="showView('field')"><div class="hi">🔑</div><div class="ht">Technician</div><div class="hd">RFID auth & activity logging</div><span class="hb">RFID</span></div>
+      <div class="hcard h3" onclick="showView('resident')"><div class="hi">🏘️</div><div class="ht">Resident</div><div class="hd">Area power status & notifications</div><span class="hb">AREA</span></div>
+      <div class="hcard h4" onclick="showView('sim')"><div class="hi">⚡</div><div class="ht">Simulator</div><div class="hd">Trigger live events — sirens fire!</div><span class="hb">IoT</span></div>
+      <div class="hcard h5" onclick="showView('hardware')"><div class="hi">🔧</div><div class="ht">Hardware</div><div class="hd">Schematics, wiring & blueprints</div><span class="hb">BLUEPRINT</span></div>
+      <div class="hcard h6" onclick="showView('presentation')"><div class="hi">📊</div><div class="ht">Presentation</div><div class="hd">Full hackathon pitch deck</div><span class="hb">SLIDES</span></div>
+    </div>
+    <div class="home-team">
+      <h3>👨‍💻 Team GridGuard</h3>
+      <p>Dominic Nkutha • Leilt Getachew • Nektaria Keletso Nchabeleng<br>Molemo Langrish • Precioso Mabassa • Njabulo Sithole • Thando Zwane</p>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░ CONTROL ROOM ░░░░░░░░░░░░░░░ -->
+<div class="view" id="control-view">
+  <!-- Active siren bar -->
+  <div class="siren-bar" id="sirenBar">
+    <div class="siren-bar-icon">🚨</div>
+    <div>
+      <div class="siren-bar-text" id="sirenBarText">CRITICAL ALERT ACTIVE</div>
+      <div class="siren-bar-tf" id="sirenBarTf">—</div>
+    </div>
+    <button class="siren-stop-btn" onclick="dismissSiren()">SILENCE SIREN</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="scard" style="--scc:#00c853"><div class="si">✅</div><div class="sv" id="s-on">0</div><div class="sl">ONLINE</div></div>
+    <div class="scard" style="--scc:#ff1744"><div class="si">🔴</div><div class="sv" id="s-off">0</div><div class="sl">OFFLINE</div></div>
+    <div class="scard" style="--scc:#ffab00"><div class="si">⚠️</div><div class="sv" id="s-al">0</div><div class="sl">ALERTS</div></div>
+    <div class="scard" style="--scc:#2979ff"><div class="si">🔧</div><div class="sv" id="s-mt">0</div><div class="sl">MAINT</div></div>
+    <div class="scard" style="--scc:#d500f9"><div class="si">🎫</div><div class="sv" id="s-tk">0</div><div class="sl">TICKETS</div></div>
+  </div>
+
+  <div class="ctrl-grid">
+    <div class="ctrl-left">
+      <!-- MAP CARD -->
+      <div class="map-card">
+        <div class="map-header">
+          <div class="map-header-l">
+            <div>
+              <div class="map-title">⚡ GridGuard Live Map</div>
+              <div class="map-sub">South Africa — All Infrastructure</div>
+            </div>
+          </div>
+          <div class="map-filters">
+            <button class="mfbtn active" onclick="filterMap('all',this)">All</button>
+            <button class="mfbtn" onclick="filterMap('transformer',this)">🔴 Transformers</button>
+            <button class="mfbtn" onclick="filterMap('danger',this)">🟡 Danger Boxes</button>
+            <button class="mfbtn" onclick="filterMap('residential',this)">🟠 Residential</button>
+          </div>
+        </div>
+        <div class="map-area" id="mapArea"></div>
+      </div>
+
+      <!-- City selector -->
+      <div class="city-tabs" id="cityTabs"></div>
+
+      <!-- TF list -->
+      <div class="panel">
+        <div class="phdr"><h3>⚡ Transformers & Infrastructure</h3><span class="bdg" id="tfc">0</span></div>
+        <div class="pbody" id="tfl"></div>
+      </div>
+    </div>
+
+    <div class="ctrl-right">
+      <!-- Alerts -->
+      <div class="panel">
+        <div class="phdr"><h3>🚨 Live Alerts</h3><span class="bdg" id="alc">0</span></div>
+        <div class="pbody" id="all"><div class="empty-msg">Monitoring — no alerts</div></div>
+      </div>
+      <!-- Tickets -->
+      <div class="panel">
+        <div class="phdr"><h3>🎫 Auto Tickets</h3><span class="bdg" id="tkc">0</span></div>
+        <div class="pbody"><div class="tkgrid" id="tkl"><div class="empty-msg">No tickets yet</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░ FIELD TECH ░░░░░░░░░░░░░░░ -->
+<div class="view" id="field-view">
+  <div class="fcont">
+    <div class="rbox">
+      <div class="rbi">💳</div>
+      <div class="rbt">Tap RFID Key Card</div>
+      <div class="rbs">Select technician to authenticate</div>
+      <div class="rgrid">
+        <button class="rbtn" onclick="scanR('RFID-001',this)"><div class="rn">John Mokoena</div><div class="rr">Senior Tech</div><div class="ri">RFID-001</div></button>
+        <button class="rbtn" onclick="scanR('RFID-002',this)"><div class="rn">Sarah Ndlovu</div><div class="rr">Field Engineer</div><div class="ri">RFID-002</div></button>
+        <button class="rbtn" onclick="scanR('RFID-003',this)"><div class="rn">David Botha</div><div class="rr">Maintenance</div><div class="ri">RFID-003</div></button>
+        <button class="rbtn" onclick="scanR('RFID-004',this)"><div class="rn">Thandi Mkhize</div><div class="rr">Senior Engineer</div><div class="ri">RFID-004</div></button>
+      </div>
+      <div class="abox" id="abox"></div>
+    </div>
+    <div class="fform" id="fform">
+      <div class="fft">📋 Log Transformer Activity</div>
+      <div class="fg"><label>Select Transformer</label>
+        <select id="ftf" onchange="ckF()">
+          <option value="">-- Choose --</option>
+          <option value="TF-JHB-001">TF-JHB-001 - Soweto Zone 7A</option>
+          <option value="TF-JHB-002">TF-JHB-002 - Alexandra Block C</option>
+          <option value="TF-JHB-003">TF-JHB-003 - Tembisa Section 5</option>
+          <option value="TF-JHB-004">TF-JHB-004 - Diepsloot North</option>
+          <option value="TF-JHB-005">TF-JHB-005 - Katlehong East</option>
+          <option value="TF-JHB-006">TF-JHB-006 - Sandton CBD</option>
+          <option value="TF-CPT-001">TF-CPT-001 - Cape Town CBD</option>
+          <option value="TF-CPT-002">TF-CPT-002 - Khayelitsha</option>
+          <option value="TF-CPT-003">TF-CPT-003 - Mitchells Plain</option>
+          <option value="TF-EC-001">TF-EC-001 - Gqeberha Central</option>
+          <option value="TF-EC-002">TF-EC-002 - East London North</option>
+          <option value="TF-GP-001">TF-GP-001 - Pretoria East</option>
+          <option value="TF-GP-002">TF-GP-002 - Centurion North</option>
+        </select>
+      </div>
+      <div class="fg"><label>Activity Type</label>
+        <div class="agrid">
+          <div class="abtn" onclick="pA(this,'Routine Maintenance')"><div class="ai">🔧</div><div class="al">Maintenance</div></div>
+          <div class="abtn" onclick="pA(this,'Emergency Repair')"><div class="ai">🚨</div><div class="al">Emergency</div></div>
+          <div class="abtn" onclick="pA(this,'Routine Checkup')"><div class="ai">📋</div><div class="al">Checkup</div></div>
+          <div class="abtn" onclick="pA(this,'Upgrade/Replace')"><div class="ai">⬆️</div><div class="al">Upgrade</div></div>
+          <div class="abtn" onclick="pA(this,'Meter Reading')"><div class="ai">📊</div><div class="al">Meter</div></div>
+          <div class="abtn" onclick="pA(this,'Investigation')"><div class="ai">🔍</div><div class="al">Investigate</div></div>
+        </div>
+      </div>
+      <div class="fg"><label>Notes</label><textarea id="fnotes" placeholder="Optional notes..."></textarea></div>
+      <button class="subbtn" id="fsub" onclick="subF()" disabled>🔓 Open Door & Log Activity</button>
+      <div class="succb" id="fsucc">
+        <div style="font-size:2em;">✅</div>
+        <div style="color:var(--grn2);font-weight:700;margin-top:5px;">Activity Logged!</div>
+        <div style="color:var(--tx2);font-size:.78em;margin-top:3px;" id="fsuccD"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░ RESIDENT ░░░░░░░░░░░░░░░ -->
+<div class="view" id="resident-view">
+  <div class="rcont">
+    <select class="rasel" id="rarea" onchange="chRA()">
+      <option value="Soweto Zone 7A">📍 Soweto Zone 7A, Johannesburg</option>
+      <option value="Alexandra Block C">📍 Alexandra Block C, Johannesburg</option>
+      <option value="Tembisa Section 5">📍 Tembisa Section 5, Ekurhuleni</option>
+      <option value="Diepsloot North">📍 Diepsloot North, Johannesburg</option>
+      <option value="Katlehong East">📍 Katlehong East, Ekurhuleni</option>
+      <option value="Sandton CBD">📍 Sandton CBD, Johannesburg</option>
+      <option value="Cape Town CBD">📍 Cape Town CBD</option>
+      <option value="Khayelitsha">📍 Khayelitsha, Cape Town</option>
+      <option value="Mitchells Plain">📍 Mitchells Plain, Cape Town</option>
+      <option value="Gqeberha Central">📍 Gqeberha Central, Eastern Cape</option>
+      <option value="East London North">📍 East London North, Eastern Cape</option>
+      <option value="Pretoria East">📍 Pretoria East, Gauteng</option>
+      <option value="Centurion North">📍 Centurion North, Gauteng</option>
+    </select>
+    <div class="pbox">
+      <div class="pwi" id="pwi">⚡</div>
+      <div class="pwt on" id="pwt">POWER ON</div>
+      <div class="pwd" id="pwd">Your area transformer is operating normally</div>
+      <div class="pws">
+        <div class="pws1"><div class="pv" id="pvolt">230V</div><div class="pl">VOLTAGE</div></div>
+        <div class="pws1"><div class="pv" id="pstat" style="color:var(--grn2)">NORMAL</div><div class="pl">STATUS</div></div>
+        <div class="pws1"><div class="pv" id="pdoor">🔒</div><div class="pl">DOOR</div></div>
+      </div>
+    </div>
+    <h3 style="font-size:.9em;margin-bottom:9px;font-family:var(--display)">🔔 Live Notifications</h3>
+    <div id="nlist"><div class="empty-msg">🔔 No notifications yet</div></div>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░ SIMULATOR ░░░░░░░░░░░░░░░ -->
+<div class="view" id="sim-view">
+  <div class="scont">
+    <div class="ssec">
+      <div class="ssti">🎯 Select Transformer / Device</div>
+      <select class="ssel" id="stf">
+        <option value="TF-JHB-001">TF-JHB-001 — Soweto Zone 7A, JHB</option>
+        <option value="TF-JHB-002">TF-JHB-002 — Alexandra Block C, JHB</option>
+        <option value="TF-JHB-003">TF-JHB-003 — Tembisa Section 5</option>
+        <option value="TF-JHB-004">TF-JHB-004 — Diepsloot North</option>
+        <option value="TF-JHB-005">TF-JHB-005 — Katlehong East</option>
+        <option value="TF-JHB-006">TF-JHB-006 — Sandton CBD</option>
+        <option value="TF-CPT-001">TF-CPT-001 — Cape Town CBD</option>
+        <option value="TF-CPT-002">TF-CPT-002 — Khayelitsha</option>
+        <option value="TF-CPT-003">TF-CPT-003 — Mitchells Plain</option>
+        <option value="TF-EC-001">TF-EC-001 — Gqeberha, Eastern Cape</option>
+        <option value="TF-EC-002">TF-EC-002 — East London North</option>
+        <option value="TF-GP-001">TF-GP-001 — Pretoria East</option>
+        <option value="TF-GP-002">TF-GP-002 — Centurion North</option>
+        <option value="DBX-JHB-01">DBX-JHB-01 — Danger Box, Soweto</option>
+        <option value="DBX-CPT-01">DBX-CPT-01 — Danger Box, Cape Town</option>
+        <option value="RES-JHB-017">RES-JHB-017 — Residential Box, Alexandra</option>
+      </select>
+    </div>
+    <div class="ssec">
+      <div class="ssti">💥 Simulate Events — Siren fires on critical!</div>
+      <div class="egrid">
+        <button class="ebtn blow" onclick="simE('BLOWN')"><div class="ei">💥</div><div class="el">Blown</div><div class="ed">Complete failure</div></button>
+        <button class="ebtn trip" onclick="simE('TRIPPED')"><div class="ei">⚡</div><div class="el">Tripped</div><div class="ed">Overload trip</div></button>
+        <button class="ebtn tamp" onclick="simE('TAMPER')"><div class="ei">🚨</div><div class="el">Tamper</div><div class="ed">🔊 SIREN!</div></button>
+        <button class="ebtn vdrop" onclick="simE('LOW_V')"><div class="ei">📉</div><div class="el">Low Voltage</div><div class="ed">Voltage drop</div></button>
+        <button class="ebtn dforce" onclick="simE('DOOR')"><div class="ei">🚪</div><div class="el">Door Forced</div><div class="ed">🔊 SIREN!</div></button>
+        <button class="ebtn overl" onclick="simE('OVERLOAD')"><div class="ei">🔥</div><div class="el">Overload</div><div class="ed">Excess current</div></button>
+        <button class="ebtn bridg" onclick="simE('BRIDGE')"><div class="ei">⛓️</div><div class="el">Bridging</div><div class="ed">🔊 SIREN!</div></button>
+        <button class="ebtn rest" onclick="simE('RESTORE')"><div class="ei">✅</div><div class="el">Restore</div><div class="ed">Back online</div></button>
+      </div>
+      <div class="sproc" id="sproc">⏳ Transmitting to GridGuard...</div>
+    </div>
+    <div class="ssec">
+      <div class="ssti">📜 Event Log</div>
+      <div class="slog" id="slog"><div class="empty-msg">Click an event to simulate</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░ HARDWARE ░░░░░░░░░░░░░░░ -->
+<div class="view" id="hardware-view">
+  <div class="hw-cont">
+    <div class="hw-hero"><h2>🔧 Hardware Blueprint</h2><p>GridGuard IoT Transformer Monitor — Complete Build Guide</p></div>
+    <div class="hw-section">
+      <h3>📦 Component List & Bill of Materials</h3>
+      <table class="comp-table">
+        <thead><tr><th>#</th><th>Component</th><th>Specification</th><th>ESP32 Pin</th><th>Cost (ZAR)</th></tr></thead>
+        <tbody>
+          <tr><td class="comp-num">1</td><td class="comp-name">ESP32-WROOM-32</td><td class="comp-spec">Dual-core 240MHz, WiFi+BT, 3.3V, 38 GPIO</td><td class="comp-pin">Main MCU</td><td class="comp-cost">R150–250</td></tr>
+          <tr><td class="comp-num">2</td><td class="comp-name">MFRC522 RFID Module</td><td class="comp-spec">13.56MHz, SPI, reads Mifare cards</td><td class="comp-pin">SDA→G5, SCK→G18, MOSI→G23, MISO→G19, RST→G4</td><td class="comp-cost">R50–80</td></tr>
+          <tr><td class="comp-num">3</td><td class="comp-name">ZMPT101B Voltage Sensor</td><td class="comp-spec">AC 0–250V measurement, analog output</td><td class="comp-pin">OUT→G34 (ADC)</td><td class="comp-cost">R60–100</td></tr>
+          <tr><td class="comp-num">4</td><td class="comp-name">ACS712 Current Sensor (30A)</td><td class="comp-spec">AC/DC 0–30A, 66mV/A, analog out</td><td class="comp-pin">OUT→G35 (ADC)</td><td class="comp-cost">R40–70</td></tr>
+          <tr><td class="comp-num">5</td><td class="comp-name">SW-420 Vibration Sensor</td><td class="comp-spec">Adjustable threshold, digital output</td><td class="comp-pin">DO→G27</td><td class="comp-cost">R20–40</td></tr>
+          <tr><td class="comp-num">6</td><td class="comp-name">MC-38 Magnetic Door Sensor</td><td class="comp-spec">Reed switch, NO/NC contacts</td><td class="comp-pin">NO→G26 (PULLUP)</td><td class="comp-cost">R25–50</td></tr>
+          <tr><td class="comp-num">7</td><td class="comp-name">DS18B20 Temperature Sensor</td><td class="comp-spec">Digital, -55°C to +125°C, OneWire</td><td class="comp-pin">DATA→G25 + 4.7kΩ pullup</td><td class="comp-cost">R30–60</td></tr>
+          <tr><td class="comp-num">8</td><td class="comp-name">SIM800L GSM Module</td><td class="comp-spec">2G GSM/GPRS, backup when WiFi down</td><td class="comp-pin">TX→G16, RX→G17</td><td class="comp-cost">R120–200</td></tr>
+          <tr><td class="comp-num">9</td><td class="comp-name">HLK-PM01 AC-DC PSU</td><td class="comp-spec">220V AC → 5V DC 3W</td><td class="comp-pin">5V rail</td><td class="comp-cost">R40–80</td></tr>
+          <tr><td class="comp-num">10</td><td class="comp-name">18650 Li-Ion Battery</td><td class="comp-spec">3.7V 2600mAh, backup when mains fail</td><td class="comp-pin">Via TP4056</td><td class="comp-cost">R35–60</td></tr>
+          <tr><td class="comp-num">11</td><td class="comp-name">TP4056 Charge Module</td><td class="comp-spec">Li-Ion charger + protection</td><td class="comp-pin">BAT→18650, OUT→AMS1117</td><td class="comp-cost">R15–25</td></tr>
+          <tr><td class="comp-num">12</td><td class="comp-name">AMS1117 3.3V Regulator</td><td class="comp-spec">3.3V 1A LDO, powers ESP32</td><td class="comp-pin">OUT→ESP32 3V3</td><td class="comp-cost">R5–10</td></tr>
+          <tr><td class="comp-num">13</td><td class="comp-name">IP65 Enclosure</td><td class="comp-spec">200×120×75mm ABS waterproof</td><td class="comp-pin">—</td><td class="comp-cost">R80–150</td></tr>
+          <tr><td class="comp-num">14</td><td class="comp-name">RGB LED + 5V Buzzer (95dB)</td><td class="comp-spec">Status LEDs + loud alarm buzzer</td><td class="comp-pin">G2 (Grn), G15 (Red), G13 (Buzz)</td><td class="comp-cost">R15–30</td></tr>
+          <tr><td class="comp-num">15</td><td class="comp-name">4.7kΩ Resistor</td><td class="comp-spec">Pullup for DS18B20 OneWire</td><td class="comp-pin">G25 to 3.3V</td><td class="comp-cost">R1–2</td></tr>
+          <tr><td class="comp-num">16</td><td class="comp-name">RFID Cards (×10)</td><td class="comp-spec">13.56MHz Mifare Classic 1K</td><td class="comp-pin">—</td><td class="comp-cost">R50–80</td></tr>
+          <tr><td class="comp-num">17</td><td class="comp-name">Wires, PCB, connectors</td><td class="comp-spec">Jumper wires, screw terminals</td><td class="comp-pin">—</td><td class="comp-cost">R30–50</td></tr>
+        </tbody>
+      </table>
+      <div class="total-cost">💰 TOTAL PER UNIT: R741–R1,285 &nbsp;|&nbsp; AT SCALE (1000+): R450–R700 per unit</div>
+    </div>
+    <div class="hw-section">
+      <h3>🔌 Complete Pin Wiring Map</h3>
+      <table class="pin-table">
+        <thead><tr><th>ESP32 Pin</th><th>Connected To</th><th>Wire Color</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pin-esp">3V3</td><td class="pin-to">MFRC522 VCC, SW-420 VCC, DS18B20 VCC</td><td>🔴 Red</td><td class="pin-note">3.3V power rail</td></tr>
+          <tr><td class="pin-esp">GND</td><td class="pin-to">ALL module GNDs</td><td>⚫ Black</td><td class="pin-note">Common ground</td></tr>
+          <tr><td class="pin-esp">GPIO5</td><td class="pin-to">MFRC522 SDA/SS</td><td>🟡 Yellow</td><td class="pin-note">SPI Chip Select</td></tr>
+          <tr><td class="pin-esp">GPIO18</td><td class="pin-to">MFRC522 SCK</td><td>🟠 Orange</td><td class="pin-note">SPI Clock</td></tr>
+          <tr><td class="pin-esp">GPIO23</td><td class="pin-to">MFRC522 MOSI</td><td>🔵 Blue</td><td class="pin-note">SPI Data Out</td></tr>
+          <tr><td class="pin-esp">GPIO19</td><td class="pin-to">MFRC522 MISO</td><td>🟢 Green</td><td class="pin-note">SPI Data In</td></tr>
+          <tr><td class="pin-esp">GPIO4</td><td class="pin-to">MFRC522 RST</td><td>⚪ White</td><td class="pin-note">RFID Reset</td></tr>
+          <tr><td class="pin-esp">GPIO34</td><td class="pin-to">ZMPT101B OUT</td><td>🟣 Purple</td><td class="pin-note">ADC read-only pin</td></tr>
+          <tr><td class="pin-esp">GPIO35</td><td class="pin-to">ACS712 OUT</td><td>🟤 Brown</td><td class="pin-note">ADC read-only pin</td></tr>
+          <tr><td class="pin-esp">GPIO27</td><td class="pin-to">SW-420 DO</td><td>🟡 Yellow</td><td class="pin-note">Digital (vibration)</td></tr>
+          <tr><td class="pin-esp">GPIO26</td><td class="pin-to">MC-38 Door Sensor</td><td>⚪ White</td><td class="pin-note">INPUT_PULLUP enabled</td></tr>
+          <tr><td class="pin-esp">GPIO25</td><td class="pin-to">DS18B20 DATA</td><td>🟢 Green</td><td class="pin-note">+ 4.7kΩ pullup to 3.3V</td></tr>
+          <tr><td class="pin-esp">GPIO16</td><td class="pin-to">SIM800L TXD</td><td>🟠 Orange</td><td class="pin-note">Serial2 RX on ESP</td></tr>
+          <tr><td class="pin-esp">GPIO17</td><td class="pin-to">SIM800L RXD</td><td>🔵 Blue</td><td class="pin-note">Serial2 TX on ESP</td></tr>
+          <tr><td class="pin-esp">GPIO2</td><td class="pin-to">Green LED (+220Ω)</td><td>🟢 Green</td><td class="pin-note">Status OK</td></tr>
+          <tr><td class="pin-esp">GPIO15</td><td class="pin-to">Red LED (+220Ω)</td><td>🔴 Red</td><td class="pin-note">Alert/tamper</td></tr>
+          <tr><td class="pin-esp">GPIO13</td><td class="pin-to">95dB Buzzer (via NPN)</td><td>🟡 Yellow</td><td class="pin-note">Use 2N2222 transistor</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="hw-section">
+      <h3>📐 Wiring Schematic</h3>
+      <div class="wiring-diagram"><span class="wd-title">╔══════════════════════════════════════════════════════════════════╗
+║               GRIDGUARD AI — WIRING SCHEMATIC                    ║
+╚══════════════════════════════════════════════════════════════════╝</span>
+
+     <span class="wd-wire">220V AC MAINS (from transformer)</span>
+           │           │
+     ┌─────┴─────┐     ├──────────────────────────────────────┐
+     │ <span class="wd-comp">ZMPT101B</span>  │     │                                      │
+     │ Voltage   │     │                                      │
+     │ OUT──→<span class="wd-pin">G34</span> │     │                              <span class="wd-comp">ACS712-30A</span>
+     └───────────┘     │                              Current Sensor
+                       │                              OUT──→<span class="wd-pin">G35</span>
+     ┌──────────────────┴────────┐
+     │       <span class="wd-comp">HLK-PM01</span>            │
+     │  220V AC → 5V DC          │
+     └───────────┬───────────────┘
+                 │ 5V
+     ┌───────────┴──────────┐
+     │       <span class="wd-comp">TP4056</span>          │──── BAT ──── 18650 Li-Ion
+     │  Li-Ion Charger      │
+     │  OUT→AMS1117→3.3V   │──── <span class="wd-comp">SIM800L</span> VCC (direct 3.7V)
+     └──────────────────────┘
+
+   ══════════════ <span class="wd-esp">ESP32-WROOM-32</span> ═══════════════
+   <span class="wd-esp">   3.3V──┤ 3V3              GPIO23 ├──→ <span class="wd-comp">MFRC522 MOSI</span></span>
+   <span class="wd-esp">    GND──┤ GND              GPIO19 ├──→ <span class="wd-comp">MFRC522 MISO</span></span>
+   <span class="wd-esp">         │                  GPIO18 ├──→ <span class="wd-comp">MFRC522 SCK</span></span>
+   <span class="wd-esp">         │                  GPIO5  ├──→ <span class="wd-comp">MFRC522 SDA</span></span>
+   <span class="wd-esp">         │                  GPIO4  ├──→ <span class="wd-comp">MFRC522 RST</span></span>
+   <span class="wd-esp">         │                  GPIO34 ├──→ <span class="wd-comp">ZMPT101B OUT</span> <span class="wd-note">(Voltage)</span></span>
+   <span class="wd-esp">         │                  GPIO35 ├──→ <span class="wd-comp">ACS712 OUT</span> <span class="wd-note">(Current)</span></span>
+   <span class="wd-esp">         │                  GPIO27 ├──→ <span class="wd-comp">SW-420 DO</span> <span class="wd-note">(Vibration)</span></span>
+   <span class="wd-esp">         │                  GPIO26 ├──→ <span class="wd-comp">MC-38 Door</span></span>
+   <span class="wd-esp">         │                  GPIO25 ├──→ <span class="wd-comp">DS18B20</span> <span class="wd-note">(+4.7kΩ)</span></span>
+   <span class="wd-esp">         │                  GPIO16 ├──→ <span class="wd-comp">SIM800L TX</span></span>
+   <span class="wd-esp">         │                  GPIO17 ├──→ <span class="wd-comp">SIM800L RX</span></span>
+   <span class="wd-esp">         │                  GPIO2  ├──→ <span class="wd-comp">Green LED</span> +220Ω</span>
+   <span class="wd-esp">         │                  GPIO15 ├──→ <span class="wd-comp">Red LED</span> +220Ω</span>
+   <span class="wd-esp">         │                  GPIO13 ├──→ <span class="wd-comp">95dB Buzzer</span> <span class="wd-note">(NPN transistor)</span></span>
+   <span class="wd-esp">         └───────────────────────────┘</span>
+
+   <span class="wd-note">NOTES:
+   • SIM800L: power directly from battery, NOT ESP 3.3V pin
+   • ZMPT101B + ACS712: need 5V supply from HLK-PM01
+   • DS18B20: 4.7kΩ between DATA and 3.3V is mandatory
+   • All GNDs must be tied together (common ground)
+   • 220V AC wiring: QUALIFIED ELECTRICIAN ONLY ⚠️</span></div>
+    </div>
+    <div class="hw-section">
+      <h3>⚡ Power & Electrical Specifications</h3>
+      <div class="spec-grid">
+        <div class="spec-card"><h4>🔌 Main Power</h4><p>Input: <span class="sv">220V AC</span><br>PSU Output: <span class="sv">5V DC @ 600mA</span><br>Module: HLK-PM01<br>Isolation: <span class="sv">3kV</span></p></div>
+        <div class="spec-card"><h4>🔋 Battery Backup</h4><p>Cell: <span class="sv">18650 Li-Ion 3.7V</span><br>Capacity: <span class="sv">2600mAh</span><br>Backup: <span class="sv">~8–12 hours</span><br>Charger: TP4056</p></div>
+        <div class="spec-card"><h4>📡 Communication</h4><p>Primary: <span class="sv">WiFi 802.11 b/g/n</span><br>Backup: <span class="sv">2G GSM (SIM800L)</span><br>Protocol: HTTPS+WebSocket<br>Latency: <span class="sv">&lt;3 seconds</span></p></div>
+        <div class="spec-card"><h4>🌡️ Sensor Ranges</h4><p>Voltage: <span class="sv">0–250V AC</span><br>Current: <span class="sv">0–30A AC/DC</span><br>Temperature: <span class="sv">-55 to +125°C</span><br>RFID: <span class="sv">13.56MHz, 3–5cm</span></p></div>
+        <div class="spec-card"><h4>🔒 Security</h4><p>Tamper: <span class="sv">SW-420 vibration</span><br>Door: <span class="sv">MC-38 reed switch</span><br>Auth: <span class="sv">RFID Mifare 1K</span><br>Alarm: <span class="sv">95dB buzzer + LED</span></p></div>
+        <div class="spec-card"><h4>📏 Physical</h4><p>Enclosure: <span class="sv">200×120×75mm</span><br>Rating: <span class="sv">IP65 waterproof</span><br>Weight: <span class="sv">~350g assembled</span><br>Mount: <span class="sv">Bolt-on/adhesive</span></p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░ PRESENTATION ░░░░░░░░░░░░░░░ -->
+<div class="view" id="presentation-view">
+  <div class="pres-cont">
+    <div class="pres-note">📊 Present directly from here — or copy into PowerPoint/Google Slides.</div>
+
+    <div class="slide"><span class="slide-num">1 / 13</span>
+      <div style="text-align:center;padding:18px 0;">
+        <div style="font-size:56px;">⚡🛡️</div>
+        <div class="slide-title-big">GridGuard AI</div>
+        <p class="slide-subtitle">"Because Eskom should know BEFORE the first call is logged"</p>
+        <p style="margin-top:14px;color:var(--tx2);">Intelligent Transformer Monitoring & Tamper Detection System</p>
+        <div style="margin-top:18px;color:var(--tx2);font-size:.85em;">Dominic Nkutha • Leilt Getachew • Nektaria Keletso Nchabeleng<br>Molemo Langrish • Precioso Mabassa • Njabulo Sithole • Thando Zwane</div>
+      </div>
+    </div>
+
+    <div class="slide"><span class="slide-num">2 / 13</span>
+      <h2>😰 The Problem is BIGGER Than Load-Shedding</h2>
+      <ul>
+        <li>SA has <span class="stat-highlight">395,000+</span> distribution transformers — NONE automatically monitored</li>
+        <li>Copper theft costs Eskom <span class="stat-highlight">R2+ BILLION</span> per year</li>
+        <li>Transformer blows → people log calls → Eskom finds out <strong>HOURS later</strong></li>
+        <li>Illegal electricity bridging costs <span class="stat-highlight">R20+ BILLION</span> annually</li>
+        <li>Vandalism leaves <span class="stat-highlight">10,000+ homes</span> without power weekly</li>
+      </ul>
+      <div class="highlight"><strong>THE REALITY:</strong> Eskom has NO real-time visibility. NO automated alerts. NO tamper detection. Communities suffer in silence until enough calls pile up.</div>
+    </div>
+
+    <div class="slide"><span class="slide-num">3 / 13</span>
+      <h2>💡 Our Solution: GridGuard AI</h2>
+      <h3>🔒 Detects Unauthorized Access INSTANTLY</h3>
+      <p>RFID authentication required. Vibration sensor detects forced entry. Magnetic door sensor detects unauthorized opening. Tamper = 🔊 SIREN + instant alert.</p>
+      <h3>⚡ Monitors Transformer Health 24/7</h3>
+      <p>Real-time voltage, current, temperature. Detects blown transformers in SECONDS. Identifies trip vs blown vs vandalism.</p>
+      <h3>📱 Alerts Everyone IMMEDIATELY</h3>
+      <p>Eskom control room gets instant dashboard alerts. Auto-generates fault tickets. Residents get area-specific push notifications.</p>
+      <h3>🛡️ Prevents Electricity Theft</h3>
+      <p>Detects illegal bridging through current anomalies. Auto-cutoff capability. Alerts investigation teams.</p>
+    </div>
+
+    <div class="slide"><span class="slide-num">4 / 13</span>
+      <h2>⚙️ How It Works — 4 Layers</h2>
+      <div class="flow-box">
+<span class="flow-arrow">LAYER 1: THE DEVICE</span> (on transformer door)
+ESP32 + RFID + Voltage + Current + Temp + Door + Vibration
+Battery backup + GSM fallback → <span class="flow-good">always reporting</span>
+
+<span class="flow-arrow">LAYER 2: THE CLOUD</span> (real-time sync)
+Data syncs instantly → AI analyzes → Auto-generates tickets
+
+<span class="flow-arrow">LAYER 3: ESKOM CONTROL ROOM</span>
+Live dashboard → Instant alerts → Auto tickets → GPS dispatch
+<span class="flow-bad">Tamper/theft → SIREN + flashing alert</span>
+
+<span class="flow-arrow">LAYER 4: RESIDENT APP</span>
+Area notifications → Power status → Ticket tracking</div>
+    </div>
+
+    <div class="slide"><span class="slide-num">5 / 13</span>
+      <h2>🔧 Technology Stack</h2>
+      <div class="comparison">
+        <div class="comp-box" style="background:rgba(41,121,255,.07);border:1px solid rgba(41,121,255,.18);">
+          <h4 style="color:var(--blue);">Hardware</h4>
+          <ul style="font-size:.85em;"><li>ESP32 Microcontroller</li><li>MFRC522 RFID Reader</li><li>ZMPT101B Voltage Sensor</li><li>ACS712 Current Sensor</li><li>SW-420 Vibration Sensor</li><li>MC-38 Door Sensor</li><li>DS18B20 Temperature</li><li>SIM800L GSM Backup</li><li>18650 Battery Backup</li></ul>
+        </div>
+        <div class="comp-box" style="background:rgba(213,0,249,.07);border:1px solid rgba(213,0,249,.18);">
+          <h4 style="color:var(--pur);">Software</h4>
+          <ul style="font-size:.85em;"><li>Real-time WebSocket</li><li>Progressive Web App</li><li>ESP32 Arduino Firmware</li><li>Event-driven Architecture</li><li>Auto-ticket Generation</li><li>Area-based Notifications</li><li>Role-based Dashboards</li><li>GPS Location Mapping</li></ul>
+        </div>
+      </div>
+      <p style="text-align:center;margin-top:10px;"><span class="stat-highlight">R700–R1,200/unit</span> | At scale: <span class="stat-highlight">R450–R700/unit</span></p>
+    </div>
+
+    <div class="slide"><span class="slide-num">6 / 13</span>
+      <h2>🔑 RFID Authentication Flow</h2>
+      <div class="comparison">
+        <div class="comp-box good"><h4>✅ Authorised Access</h4><p style="font-size:.82em;">1. Tech taps RFID card<br>2. Card verified ✅<br>3. Control room sees access<br>4. Residents see "Maintenance"<br>5. Activity logged + timestamped</p></div>
+        <div class="comp-box bad"><h4>🚨 Unauthorized Access</h4><p style="font-size:.82em;">1. Door opened WITHOUT RFID<br>2. 🔊 SIREN FIRES INSTANTLY<br>3. Screen flashes red<br>4. Control room CRITICAL alert<br>5. Security auto-dispatched<br>6. Residents warned + GPS sent</p></div>
+      </div>
+    </div>
+
+    <div class="slide"><span class="slide-num">7 / 13</span>
+      <h2>⏱️ Instant Outage Detection</h2>
+      <div class="comparison">
+        <div class="comp-box bad"><h4>❌ Current Process</h4><p style="font-size:.82em;">Transformer blows → 2 hours pass → People notice → Call Eskom → Hold 30 min → Log call → 100 more calls → Dispatch → <span class="bignum" style="font-size:1.1em;">6–12 hrs</span> dark</p></div>
+        <div class="comp-box good"><h4>✅ GridGuard Process</h4><p style="font-size:.82em;">Transformer blows → <span class="stat-highlight">3 SECONDS</span> → GridGuard detects 0V → INSTANT alert → Auto-ticket → Residents notified → Tech dispatched in <strong>minutes</strong></p></div>
+      </div>
+      <div class="highlight">⏱️ Time saved: <strong>6–10 HOURS per incident</strong> | 📞 Calls prevented: <strong>Thousands per day</strong></div>
+    </div>
+
+    <div class="slide"><span class="slide-num">8 / 13</span>
+      <h2>⛓️ Anti-Bridging & Theft Prevention</h2>
+      <h3>How We Detect Bridging:</h3>
+      <ul><li>ACS712 current sensor monitors real-time draw</li><li>AI baseline learns normal consumption patterns</li><li>Sudden unexplained current spike = bridging alert + 🔊 SIREN</li><li>Automatic power cutoff at distribution box</li><li>Eskom investigation team auto-dispatched with GPS</li></ul>
+      <h3>Residential Prepaid Box Monitoring:</h3>
+      <ul><li>Same GridGuard device on prepaid meter boxes</li><li>Detects physical tampering</li><li>Auto power shutoff at street-level breaker</li><li>Evidence logged for prosecution</li></ul>
+    </div>
+
+    <div class="slide"><span class="slide-num">9 / 13</span>
+      <h2>🎮 LIVE DEMO</h2>
+      <div class="flow-box">
+<span class="flow-arrow">DEMO 1:</span> Simulate <span class="flow-bad">TRANSFORMER BLOWN</span>
+→ Control Room gets INSTANT alert + popup
+→ Resident App shows outage + ticket number
+
+<span class="flow-arrow">DEMO 2:</span> Simulate <span class="flow-bad">TAMPER DETECTED</span>
+→ 🔊 SIREN fires + screen flashes
+→ All parties notified instantly
+
+<span class="flow-arrow">DEMO 3:</span> Tap <span class="flow-good">RFID CARD</span> (Field Tech tab)
+→ Authenticated access logged
+→ Residents see maintenance notice
+
+<span class="flow-arrow">DEMO 4:</span> Simulate <span class="flow-bad">ELECTRICITY BRIDGING</span>
+→ 🔊 SIREN + auto-cutoff + investigation alert
+
+<span class="flow-arrow">DEMO 5:</span> <span class="flow-good">RESTORE POWER</span> → Everyone notified!</div>
+      <p style="text-align:center;margin-top:8px;font-style:italic;color:var(--amb);">👆 Click the "⚡ Sim" tab to run the live demo!</p>
+    </div>
+
+    <div class="slide"><span class="slide-num">10 / 13</span>
+      <h2>💰 Business Case & Impact</h2>
+      <div class="comparison">
+        <div class="comp-box" style="background:rgba(41,121,255,.07);border:1px solid rgba(41,121,255,.18);">
+          <h4 style="color:var(--blue);">Cost to Deploy</h4>
+          <p style="font-size:.85em;">R700/unit × 395,000 = <strong>R276M total</strong><br>Eskom loses <strong>R2B+ to theft ANNUALLY</strong><br><span class="stat-highlight">ROI: Under 2 months</span></p>
+        </div>
+        <div class="comp-box" style="background:rgba(0,200,83,.07);border:1px solid rgba(0,200,83,.18);">
+          <h4 style="color:var(--grn2);">Impact</h4>
+          <p style="font-size:.85em;"><span class="stat-highlight">90%</span> faster fault response<br><span class="stat-highlight">70%</span> less call center volume<br><span class="stat-highlight">R2B+</span> saved annually<br>Communities get power back <strong>HOURS faster</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide"><span class="slide-num">11 / 13</span>
+      <h2>🚀 Future Roadmap</h2>
+      <ul>
+        <li><strong style="color:var(--blue);">Phase 1 (Now):</strong> Transformer monitoring & tamper detection</li>
+        <li><strong style="color:var(--grn2);">Phase 2:</strong> Residential prepaid box monitoring across SA</li>
+        <li><strong style="color:var(--amb);">Phase 3:</strong> AI predictive maintenance — predict failures before they happen</li>
+        <li><strong style="color:var(--pur);">Phase 4:</strong> SAPS integration for instant theft reporting</li>
+        <li><strong style="color:var(--red);">Phase 5:</strong> Solar-powered units for remote/off-grid areas</li>
+        <li><strong style="color:var(--blue);">Phase 6:</strong> Municipal partnership — water, gas meters</li>
+      </ul>
+    </div>
+
+    <div class="slide"><span class="slide-num">12 / 13</span>
+      <h2>🏆 Why GridGuard Wins</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.88em;">
+        <div>✅ INSTANT detection (seconds, not hours)</div>
+        <div>✅ AUTOMATIC ticketing (no manual calls)</div>
+        <div>✅ REAL-TIME community updates</div>
+        <div>✅ RFID authentication (full accountability)</div>
+        <div>✅ 🔊 SIREN on tamper/theft/bridging</div>
+        <div>✅ BATTERY BACKUP (alerts even if power dead)</div>
+        <div>✅ GSM FALLBACK (works when WiFi down)</div>
+        <div>✅ AFFORDABLE (R700/unit, pays for itself)</div>
+        <div>✅ SCALABLE (5 to 500,000 transformers)</div>
+        <div>✅ COVERS ALL SA CITIES (JHB, CPT, PE, PTA)</div>
+      </div>
+      <div class="highlight" style="text-align:center;margin-top:14px;font-size:1.05em;">"We don't just monitor transformers. <strong>We protect communities.</strong>"</div>
+    </div>
+
+    <div class="slide"><span class="slide-num">13 / 13</span>
+      <h2 style="text-align:center;">👨‍💻 Team GridGuard</h2>
+      <div class="team-grid">
+        <div class="team-member"><div class="tm-name">Dominic Nkutha</div><div class="tm-role">Project Lead & Developer</div></div>
+        <div class="team-member"><div class="tm-name">Leilt Getachew</div><div class="tm-role">Backend Developer</div></div>
+        <div class="team-member"><div class="tm-name">Nektaria Keletso</div><div class="tm-role">Hardware Design</div></div>
+        <div class="team-member"><div class="tm-name">Molemo Langrish</div><div class="tm-role">Frontend Developer</div></div>
+        <div class="team-member"><div class="tm-name">Precioso Mabassa</div><div class="tm-role">IoT & Firmware</div></div>
+        <div class="team-member"><div class="tm-name">Njabulo Sithole</div><div class="tm-role">Research & Business</div></div>
+        <div class="team-member"><div class="tm-name">Thando Zwane</div><div class="tm-role">UI/UX & Presentation</div></div>
+      </div>
+      <div class="highlight" style="text-align:center;margin-top:18px;font-size:1.15em;">🙏 Thank you! Questions? Live demo: click ⚡ Sim above!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ░░░░░░░░░░░░░░░░░░░░ JAVASCRIPT ░░░░░░░░░░░░░░░░░░░░ -->
+<script>
+// ═══════════════════════════════════════════════
+//  DATA MODEL — All SA cities
+// ═══════════════════════════════════════════════
+const GG = {
+  areas: {
+    'TF-JHB-001':{name:'Soweto Zone 7A',city:'Johannesburg',location:'Vilakazi St Sub',lat:-26.246,lng:27.900,residents:2400,type:'transformer'},
+    'TF-JHB-002':{name:'Alexandra Block C',city:'Johannesburg',location:'Pan Africa Sub',lat:-26.105,lng:28.099,residents:3100,type:'transformer'},
+    'TF-JHB-003':{name:'Tembisa Section 5',city:'Ekurhuleni',location:'Tembisa Main Sub',lat:-26.001,lng:28.226,residents:1800,type:'transformer'},
+    'TF-JHB-004':{name:'Diepsloot North',city:'Johannesburg',location:'Diepsloot Ext 1 Sub',lat:-25.931,lng:28.016,residents:2700,type:'transformer'},
+    'TF-JHB-005':{name:'Katlehong East',city:'Ekurhuleni',location:'Katlehong Industrial',lat:-26.345,lng:28.156,residents:1950,type:'transformer'},
+    'TF-JHB-006':{name:'Sandton CBD',city:'Johannesburg',location:'Sandton City Sub',lat:-26.107,lng:28.056,residents:800,type:'transformer'},
+    'TF-CPT-001':{name:'Cape Town CBD',city:'Cape Town',location:'Civic Centre Sub',lat:-33.925,lng:18.424,residents:1200,type:'transformer'},
+    'TF-CPT-002':{name:'Khayelitsha',city:'Cape Town',location:'Khayelitsha Sub 2',lat:-34.039,lng:18.674,residents:4200,type:'transformer'},
+    'TF-CPT-003':{name:'Mitchells Plain',city:'Cape Town',location:'Tafelsig Sub',lat:-34.050,lng:18.613,residents:3300,type:'transformer'},
+    'TF-EC-001':{name:'Gqeberha Central',city:'Eastern Cape',location:'PE City Sub',lat:-33.960,lng:25.600,residents:1600,type:'transformer'},
+    'TF-EC-002':{name:'East London North',city:'Eastern Cape',location:'Quigney Sub',lat:-32.984,lng:27.879,residents:1400,type:'transformer'},
+    'TF-GP-001':{name:'Pretoria East',city:'Pretoria',location:'Lynnwood Sub',lat:-25.756,lng:28.271,residents:2100,type:'transformer'},
+    'TF-GP-002':{name:'Centurion North',city:'Pretoria',location:'Centurion Sub',lat:-25.841,lng:28.145,residents:1700,type:'transformer'},
+    'DBX-JHB-01':{name:'Soweto Danger Box',city:'Johannesburg',location:'Kumalo St, Soweto',lat:-26.251,lng:27.894,residents:0,type:'danger'},
+    'DBX-CPT-01':{name:'Cape Town Danger Box',city:'Cape Town',location:'Gugulethu St',lat:-33.990,lng:18.580,residents:0,type:'danger'},
+    'RES-JHB-017':{name:'Alexandra Residential',city:'Johannesburg',location:'17 Pan Africa Ave',lat:-26.111,lng:28.092,residents:0,type:'residential'},
+  },
+  techs:{
+    'RFID-001':{name:'John Mokoena',id:'EMP-4521',role:'Senior Technician',clearance:'Level 3'},
+    'RFID-002':{name:'Sarah Ndlovu',id:'EMP-3287',role:'Field Engineer',clearance:'Level 4'},
+    'RFID-003':{name:'David Botha',id:'EMP-6103',role:'Maintenance Tech',clearance:'Level 2'},
+    'RFID-004':{name:'Thandi Mkhize',id:'EMP-1894',role:'Senior Engineer',clearance:'Level 5'},
+  },
+  tfs:{}, als:[], ns:[], tks:[],
+
+  init(){
+    const s=localStorage.getItem('gg3x');
+    if(s){try{const d=JSON.parse(s);this.tfs=d.tfs||{};this.als=d.als||[];this.ns=d.ns||[];this.tks=d.tks||[];}catch(e){}}
+    if(!Object.keys(this.tfs).length){
+      Object.keys(this.areas).forEach(id=>{
+        const a=this.areas[id];
+        this.tfs[id]={id,area:a.name,city:a.city,location:a.location,type:a.type,
+          status:'ONLINE',voltage:+(228+Math.random()*6).toFixed(1),
+          current:+(45+Math.random()*20).toFixed(1),
+          temperature:+(35+Math.random()*10).toFixed(1),
+          doorStatus:'SECURED',tamperDetected:false,currentTechnician:null,lastUpdated:Date.now()};
+      });
+    }
+    this.save();
+  },
+  save(){try{localStorage.setItem('gg3x',JSON.stringify({tfs:this.tfs,als:this.als,ns:this.ns,tks:this.tks}));}catch(e){}},
+  uTF(id,d){this.tfs[id]={...this.tfs[id],...d,id,lastUpdated:Date.now()};this.save();rCtrl();rRes();},
+  aAl(a){a.id='GG-'+Date.now().toString(36).toUpperCase();a.timestamp=Date.now();this.als.unshift(a);if(this.als.length>80)this.als.pop();this.save();rAlI(a);uSt();},
+  aN(n){n.id='N-'+Date.now().toString(36).toUpperCase();n.timestamp=Date.now();this.ns.unshift(n);if(this.ns.length>40)this.ns.pop();this.save();rNI(n);},
+  aTk(t){t.ticketNumber='ESK-'+Date.now().toString().slice(-8);t.timestamp=Date.now();t.status='OPEN';this.tks.unshift(t);if(this.tks.length>40)this.tks.pop();this.save();rTkI(t);uSt();return t;},
+  ft(ts){return new Date(ts).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});},
+  fdt(ts){return new Date(ts).toLocaleDateString('en-ZA')+' '+this.ft(ts);}
+};
+
+// ═══════════════════════════════════════════════
+//  SIREN SYSTEM
+// ═══════════════════════════════════════════════
+let sirenActive = false;
+let sirenAudioCtx = null;
+let sirenNodes = [];
+let sirenFlashInt = null;
+
+const SIREN_EVENTS = ['TAMPER','DOOR','BRIDGE','BLOWN'];
+
+function startSiren(title, sub, detail, tfId) {
+  if (sirenActive) return;
+  sirenActive = true;
+
+  // Show modal
+  document.getElementById('sirenModal').classList.add('show');
+  document.getElementById('sirenTitle').textContent = title;
+  document.getElementById('sirenSub').textContent = sub;
+  document.getElementById('sirenDetail').textContent = detail;
+  document.getElementById('sirenTf').textContent = '📍 ' + tfId;
+
+  // Show siren bar in control room
+  const bar = document.getElementById('sirenBar');
+  bar.classList.add('show');
+  document.getElementById('sirenBarText').textContent = title;
+  document.getElementById('sirenBarTf').textContent = tfId + ' — ' + sub;
+
+  // Red flash
+  document.getElementById('sf-red').style.display = 'block';
+  document.getElementById('sf-blue').style.display = 'block';
+
+  // Audio siren
+  try {
+    sirenAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    playWail();
+  } catch(e) {}
+}
+
+function playWail() {
+  if (!sirenAudioCtx || !sirenActive) return;
+  const osc = sirenAudioCtx.createOscillator();
+  const gain = sirenAudioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(sirenAudioCtx.destination);
+  gain.gain.setValueAtTime(0, sirenAudioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.28, sirenAudioCtx.currentTime + 0.05);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(440, sirenAudioCtx.currentTime);
+  osc.frequency.linearRampToValueAtTime(900, sirenAudioCtx.currentTime + 0.6);
+  osc.frequency.linearRampToValueAtTime(440, sirenAudioCtx.currentTime + 1.2);
+  osc.start(sirenAudioCtx.currentTime);
+  osc.stop(sirenAudioCtx.currentTime + 1.3);
+  sirenNodes.push(osc);
+  osc.onended = () => { if (sirenActive) setTimeout(playWail, 100); };
+}
+
+function dismissSiren() {
+  sirenActive = false;
+  document.getElementById('sirenModal').classList.remove('show');
+  document.getElementById('sirenBar').classList.remove('show');
+  document.getElementById('sf-red').style.display = 'none';
+  document.getElementById('sf-blue').style.display = 'none';
+  sirenNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+  sirenNodes = [];
+  if (sirenAudioCtx) { try { sirenAudioCtx.close(); } catch(e) {} sirenAudioCtx = null; }
+}
+
+// ═══════════════════════════════════════════════
+//  POPUP NOTIFICATION SYSTEM
+// ═══════════════════════════════════════════════
+let popupQueue = [];
+
+function showPopup(data) {
+  const container = document.getElementById('popupContainer');
+  const id = 'pop-' + Date.now();
+
+  const sevClass = data.severity || 'INFO';
+  const iconMap = {BLOWN:'💥',TAMPER:'🚨',TRIPPED:'⚡',BRIDGE:'⛓️',DOOR:'🚪',OVERLOAD:'🔥',LOW_V:'📉',RESTORE:'✅',MAINTENANCE:'🔧',RFID:'🔑'};
+  const icon = data.icon || iconMap[data.type] || '⚡';
+
+  const el = document.createElement('div');
+  el.className = 'popup';
+  el.id = id;
+  el.innerHTML = `
+    <div class="popup-header ${data.type||sevClass}">
+      <div class="popup-icon">${icon}</div>
+      <div style="flex:1">
+        <div class="popup-title">${data.title}</div>
+      </div>
+      <button class="popup-close" onclick="closePopup('${id}')">✕</button>
+    </div>
+    <div class="popup-header" style="padding-top:0;padding-bottom:0;gap:6px;">
+      <span class="popup-sev ${data.type||sevClass}">${sevClass}</span>
+    </div>
+    <div class="popup-body">${data.message}</div>
+    ${data.ticket ? `<div class="popup-ticket">🎫 ${data.ticket}</div>` : ''}
+    <div class="popup-footer">
+      <span class="popup-tf">${data.tf||''}</span>
+      <span class="popup-time">${new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>
+    </div>`;
+
+  container.insertBefore(el, container.firstChild);
+
+  // Auto-dismiss after 8s (or 12s for critical)
+  const delay = (sevClass === 'CRITICAL' || sevClass === 'TAMPER' || sevClass === 'BRIDGE') ? 12000 : 7000;
+  setTimeout(() => closePopup(id), delay);
+
+  // Max 4 popups visible
+  const all = container.children;
+  if (all.length > 4) closePopup(all[all.length-1].id);
+}
+
+function closePopup(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('dying');
+  setTimeout(() => el.remove(), 380);
+}
+
+// ═══════════════════════════════════════════════
+//  AUDIO — BEEPS
+// ═══════════════════════════════════════════════
+function snd(t) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    if (t === 'c') {
+      g.gain.value = 0.22; osc.frequency.value = 880;
+      osc.start(); setTimeout(() => osc.frequency.value = 660, 200);
+      setTimeout(() => osc.frequency.value = 880, 400);
+      setTimeout(() => { osc.stop(); ctx.close(); }, 600);
+    } else if (t === 'w') {
+      g.gain.value = 0.18; osc.frequency.value = 520;
+      osc.start(); setTimeout(() => { osc.stop(); ctx.close(); }, 300);
+    } else {
+      g.gain.value = 0.12; osc.frequency.value = 400;
+      osc.start(); setTimeout(() => { osc.stop(); ctx.close(); }, 180);
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════
+//  VIEW SYSTEM
+// ═══════════════════════════════════════════════
+function showView(n) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nbtn').forEach(b => b.classList.remove('active'));
+  const map = {home:'home-view',control:'control-view',field:'field-view',resident:'resident-view',sim:'sim-view',hardware:'hardware-view',presentation:'presentation-view'};
+  const btnMap = {control:'c-ctrl',field:'c-field',resident:'c-res',sim:'c-sim',hardware:'c-hw',presentation:'c-pres'};
+  document.getElementById(map[n]).classList.add('active');
+  if (btnMap[n]) document.querySelectorAll('.nbtn.'+btnMap[n]).forEach(b => b.classList.add('active'));
+  if (n === 'control') { rCtrl(); buildMap(); buildCityTabs(); }
+  if (n === 'resident') { rRes(); rRN(); }
+}
+
+setInterval(() => {
+  document.getElementById('nav-clock').textContent = new Date().toLocaleString('en-ZA');
+}, 1000);
+
+function resetDemo() {
+  if (confirm('Reset all GridGuard data?')) { localStorage.removeItem('gg3x'); location.reload(); }
+}
+
+// ═══════════════════════════════════════════════
+//  MAP — SA Infrastructure with transformer icons
+// ═══════════════════════════════════════════════
+let mapFilter = 'all';
+
+// Normalized position within ~SA bounding box for the SVG map
+function latLngToSvg(lat, lng) {
+  // SA approx bounds: lat -22 to -35, lng 16 to 33
+  const x = ((lng - 16) / 17) * 780 + 10;
+  const y = ((lat - (-22)) / (-13)) * 380 + 10;
+  return { x: Math.max(10, Math.min(790, x)), y: Math.max(10, Math.min(390, y)) };
+}
+
+const SA_CITIES = ['All Cities', 'Johannesburg', 'Ekurhuleni', 'Cape Town', 'Eastern Cape', 'Pretoria'];
+
+function buildCityTabs() {
+  const tabs = document.getElementById('cityTabs');
+  tabs.innerHTML = '';
+  SA_CITIES.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'citytab' + (i === 0 ? ' active' : '');
+    btn.textContent = c;
+    btn.onclick = function() {
+      document.querySelectorAll('.citytab').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      buildMap(c === 'All Cities' ? null : c);
+    };
+    tabs.appendChild(btn);
+  });
+}
+
+function filterMap(type, btn) {
+  mapFilter = type;
+  document.querySelectorAll('.mfbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMap();
+}
+
+function buildMap(cityFilter) {
+  const area = document.getElementById('mapArea');
+  const W = 800, H = 420;
+
+  // SVG map with South Africa outline (simplified polygon)
+  const saPath = 'M 120,50 L 200,40 L 320,30 L 450,35 L 560,50 L 680,80 L 760,130 L 780,200 L 760,280 L 700,340 L 620,380 L 500,400 L 380,395 L 260,380 L 160,340 L 90,280 L 60,200 L 70,130 Z';
+
+  let pins = '';
+  Object.entries(GG.tfs).forEach(([id, tf]) => {
+    if (mapFilter !== 'all' && tf.type !== mapFilter) return;
+    const a = GG.areas[id];
+    if (!a) return;
+    if (cityFilter && tf.city !== cityFilter) return;
+
+    const {x, y} = latLngToSvg(a.lat, a.lng);
+    const statusColor = tf.status === 'ONLINE' ? '#00c853' : tf.status === 'TRIPPED' ? '#ffab00' : tf.status === 'MAINTENANCE' ? '#2979ff' : '#ff1744';
+    const isAlert = tf.status !== 'ONLINE' && tf.status !== 'MAINTENANCE';
+    const isPulse = isAlert;
+
+    if (tf.type === 'transformer') {
+      // Transformer icon
+      pins += `
+      <g class="tf-node" onclick="tfClick('${id}')" transform="translate(${x},${y})">
+        ${isPulse ? `<circle cx="0" cy="-8" class="tf-status-ring" r="14" fill="none" stroke="${statusColor}" stroke-width="2" opacity="0.6"/>` : ''}
+        <!-- Transformer body -->
+        <rect x="-14" y="-22" width="28" height="26" rx="4" fill="#111722" stroke="${statusColor}" stroke-width="1.5" class="tf-body"/>
+        <!-- Top bushings -->
+        <rect x="-9" y="-26" width="4" height="6" rx="1" fill="${statusColor}" opacity="0.8"/>
+        <rect x="-2" y="-26" width="4" height="6" rx="1" fill="${statusColor}" opacity="0.8"/>
+        <rect x="5" y="-26" width="4" height="6" rx="1" fill="${statusColor}" opacity="0.8"/>
+        <!-- Cooling fins -->
+        <rect x="-18" y="-18" width="3" height="18" rx="1" fill="${statusColor}" opacity="0.4"/>
+        <rect x="15" y="-18" width="3" height="18" rx="1" fill="${statusColor}" opacity="0.4"/>
+        <!-- Status dot -->
+        <circle cx="0" cy="-9" r="5" fill="${statusColor}" opacity="0.9"/>
+        <!-- Lightning bolt -->
+        <text x="0" y="-6" text-anchor="middle" font-size="6" fill="white" font-weight="bold">⚡</text>
+        <!-- Bottom connector -->
+        <rect x="-6" y="4" width="12" height="3" rx="1" fill="${statusColor}" opacity="0.5"/>
+        <line x1="0" y1="7" x2="0" y2="14" stroke="${statusColor}" stroke-width="1.5" opacity="0.6"/>
+        <circle cx="0" cy="16" r="2" fill="${statusColor}" opacity="0.6"/>
+        <!-- Label -->
+        <text x="0" y="28" text-anchor="middle" class="tf-label ${isAlert ? 'alert' : ''}" font-size="8">${id}</text>
+        <text x="0" y="38" text-anchor="middle" class="tf-label" font-size="7">${tf.area.substring(0,16)}</text>
+      </g>`;
+    } else if (tf.type === 'danger') {
+      // Danger box icon — warning sign style
+      pins += `
+      <g class="tf-node" onclick="tfClick('${id}')" transform="translate(${x},${y})">
+        ${isPulse ? `<circle cx="0" cy="-6" class="tf-status-ring" r="12" fill="none" stroke="#ffab00" stroke-width="2" opacity="0.6"/>` : ''}
+        <!-- Warning triangle -->
+        <polygon points="0,-20 -14,4 14,4" fill="#1a1200" stroke="#ffab00" stroke-width="1.5"/>
+        <text x="0" y="2" text-anchor="middle" font-size="10" fill="#ffab00" font-weight="bold">!</text>
+        <!-- Box body below -->
+        <rect x="-10" y="6" width="20" height="12" rx="2" fill="#111722" stroke="#ffab00" stroke-width="1"/>
+        <line x1="-6" y1="10" x2="6" y2="10" stroke="#ffab00" stroke-width="1" opacity="0.5"/>
+        <line x1="0" y1="6" x2="0" y2="18" stroke="#ffab00" stroke-width="0.5" opacity="0.4"/>
+        <text x="0" y="32" text-anchor="middle" class="tf-label alert" font-size="7">${id}</text>
+        <text x="0" y="41" text-anchor="middle" class="tf-label" font-size="7">DANGER BOX</text>
+      </g>`;
+    } else {
+      // Residential — house icon
+      pins += `
+      <g class="tf-node" onclick="tfClick('${id}')" transform="translate(${x},${y})">
+        <!-- House -->
+        <polygon points="0,-20 -12,-8 12,-8" fill="${statusColor}" opacity="0.8"/>
+        <rect x="-10" y="-8" width="20" height="14" rx="2" fill="#111722" stroke="${statusColor}" stroke-width="1.5"/>
+        <rect x="-4" y="-1" width="8" height="7" rx="1" fill="${statusColor}" opacity="0.4"/>
+        <text x="0" y="18" text-anchor="middle" class="tf-label" font-size="7">${id.replace('RES-JHB-','R')}</text>
+      </g>`;
+    }
+  });
+
+  area.innerHTML = `
+  <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="mapbg" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#0a1220"/>
+        <stop offset="100%" stop-color="#040810"/>
+      </radialGradient>
+    </defs>
+    <!-- Background -->
+    <rect width="${W}" height="${H}" fill="url(#mapbg)"/>
+    <!-- Grid -->
+    <g opacity="0.06" stroke="#00c853" stroke-width="0.5">
+      ${Array.from({length:16},(_,i)=>`<line x1="${i*50}" y1="0" x2="${i*50}" y2="${H}"/>`).join('')}
+      ${Array.from({length:9},(_,i)=>`<line x1="0" y1="${i*50}" x2="${W}" y2="${i*50}"/>`).join('')}
+    </g>
+    <!-- SA outline -->
+    <path d="${saPath}" fill="rgba(41,121,255,0.04)" stroke="rgba(41,121,255,0.2)" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- City region labels -->
+    <text x="300" y="180" fill="rgba(0,200,83,0.15)" font-family="'JetBrains Mono'" font-size="40" font-weight="bold">SA</text>
+    <text x="260" y="250" fill="rgba(255,255,255,0.07)" font-family="'JetBrains Mono'" font-size="10">JOHANNESBURG</text>
+    <text x="110" y="340" fill="rgba(255,255,255,0.07)" font-family="'JetBrains Mono'" font-size="10">CAPE TOWN</text>
+    <text x="520" y="280" fill="rgba(255,255,255,0.07)" font-family="'JetBrains Mono'" font-size="10">EASTERN CAPE</text>
+    <text x="310" y="160" fill="rgba(255,255,255,0.07)" font-family="'JetBrains Mono'" font-size="10">PRETORIA</text>
+    <!-- Device pins -->
+    ${pins}
+    <!-- Legend -->
+    <g transform="translate(10,${H-52})">
+      <rect width="190" height="48" rx="7" fill="rgba(0,0,0,0.7)" stroke="rgba(255,255,255,0.06)"/>
+      <text x="10" y="14" fill="#00c853" font-family="'JetBrains Mono'" font-size="8">🔴 Transformer</text>
+      <text x="10" y="28" fill="#ffab00" font-family="'JetBrains Mono'" font-size="8">🟡 Danger Box</text>
+      <text x="10" y="42" fill="#d500f9" font-family="'JetBrains Mono'" font-size="8">🟠 Residential</text>
+      <text x="100" y="14" fill="#ff1744" font-family="'JetBrains Mono'" font-size="8">● ALERT</text>
+      <text x="100" y="28" fill="#2979ff" font-family="'JetBrains Mono'" font-size="8">● MAINT</text>
+      <text x="100" y="42" fill="#00c853" font-family="'JetBrains Mono'" font-size="8">● ONLINE</text>
+    </g>
+    <!-- Title -->
+    <text x="${W-10}" y="18" text-anchor="end" fill="rgba(0,200,83,0.4)" font-family="'JetBrains Mono'" font-size="10" letter-spacing="2">GRIDGUARD LIVE MAP</text>
+  </svg>`;
+}
+
+function tfClick(id) {
+  const tf = GG.tfs[id];
+  if (!tf) return;
+  showPopup({
+    type:'INFO', severity:'INFO',
+    title: id + ' — ' + tf.area,
+    message: `Status: ${tf.status} | Voltage: ${tf.voltage||'—'}V | Current: ${tf.current||'—'}A | Temp: ${tf.temperature||'—'}°C | Door: ${tf.doorStatus}`,
+    tf: tf.city + ' — ' + tf.location,
+    icon: tf.type === 'danger' ? '⚠️' : tf.type === 'residential' ? '🏠' : '⚡'
+  });
+  snd('i');
+}
+
+// ═══════════════════════════════════════════════
+//  CONTROL ROOM
+// ═══════════════════════════════════════════════
+function rCtrl() {
+  const tl = document.getElementById('tfl');
+  tl.innerHTML = '';
+  let on=0, off=0, mt=0;
+
+  Object.entries(GG.tfs).forEach(([id,tf]) => {
+    if (tf.status==='ONLINE') on++;
+    else if (['OFFLINE','BLOWN','TRIPPED'].includes(tf.status)) off++;
+    else if (tf.status==='MAINTENANCE') mt++;
+    const v = typeof tf.voltage==='number' ? tf.voltage.toFixed(0) : '—';
+    const c = typeof tf.current==='number' ? tf.current.toFixed(1) : '—';
+    const tp = typeof tf.temperature==='number' ? tf.temperature.toFixed(1) : '—';
+    const typeIcon = tf.type==='danger'?'⚠️':tf.type==='residential'?'🏠':'⚡';
+    tl.innerHTML += `<div class="tfc" data-s="${tf.status}" onclick="tfClick('${id}')">
+      <div class="tfdot"></div>
+      <div>
+        <div class="tfn">${typeIcon} ${id} — ${tf.area||'?'}</div>
+        <div class="tfl">📍 ${tf.location||'?'} | 🚪 ${tf.doorStatus||'?'}</div>
+        <div class="tfcity">${tf.city||'?'} · ${tf.status}</div>
+      </div>
+      <div class="tfnums">
+        <div class="tfnum"><div class="v">${v}V</div><div class="l">VOLT</div></div>
+        <div class="tfnum"><div class="v">${c}A</div><div class="l">AMP</div></div>
+        <div class="tfnum"><div class="v">${tp}°</div><div class="l">TEMP</div></div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('s-on').textContent = on;
+  document.getElementById('s-off').textContent = off;
+  document.getElementById('s-mt').textContent = mt;
+  document.getElementById('tfc').textContent = Object.keys(GG.tfs).length;
+  uSt();
+  buildMap();
+}
+
+function uSt() {
+  document.getElementById('s-al').textContent = GG.als.length;
+  document.getElementById('s-tk').textContent = GG.tks.length;
+  document.getElementById('alc').textContent = GG.als.length;
+  document.getElementById('tkc').textContent = GG.tks.length;
+}
+
+function rAlI(a) {
+  const l = document.getElementById('all');
+  if (l.querySelector('.empty-msg')) l.innerHTML = '';
+  l.insertAdjacentHTML('afterbegin', `<div class="ali" data-v="${a.severity||'INFO'}">
+    <div class="alt"><span class="als">${a.severity||'INFO'}</span><span class="altm">${GG.ft(a.timestamp)}</span></div>
+    <div class="alti">${a.title||''}</div>
+    <div class="alm">${a.message||''}</div>
+  </div>`);
+}
+
+function rTkI(t) {
+  const l = document.getElementById('tkl');
+  if (l.querySelector('.empty-msg')) l.innerHTML = '';
+  l.insertAdjacentHTML('afterbegin', `<div class="tkcard">
+    <div class="tkt"><span class="tkn">${t.ticketNumber}</span><span class="tkst">${t.status}</span></div>
+    <div class="tkb"><strong>${t.type||''}</strong><br>${t.transformer||''} — ${t.area||''}<br>${t.description||''}<br><em style="color:var(--tx3)">${GG.fdt(t.timestamp)}</em></div>
+  </div>`);
+}
+
+function rAllAl() { const l=document.getElementById('all');l.innerHTML=GG.als.length?'':'<div class="empty-msg">Monitoring...</div>';GG.als.forEach(a=>rAlI(a)); }
+function rAllTk() { const l=document.getElementById('tkl');l.innerHTML=GG.tks.length?'':'<div class="empty-msg">No tickets yet</div>';GG.tks.forEach(t=>rTkI(t)); }
+
+// ═══════════════════════════════════════════════
+//  FIELD TECH
+// ═══════════════════════════════════════════════
+let cT=null, sA=null;
+
+function scanR(r, b) {
+  const t = GG.techs[r];
+  if (!t) return;
+  document.querySelectorAll('.rbtn').forEach(x => x.classList.remove('act'));
+  b.classList.add('act');
+  const ab = document.getElementById('abox');
+  ab.className = 'abox show wt';
+  ab.textContent = '🔄 Scanning RFID...';
+  snd('i');
+  setTimeout(() => {
+    cT = {...t, rfid:r};
+    ab.className = 'abox show ok';
+    ab.innerHTML = '✅ <strong>' + t.name + '</strong> (' + t.id + ') — ' + t.clearance;
+    document.getElementById('fform').classList.add('show');
+    snd('w');
+    showPopup({type:'MAINTENANCE',severity:'INFO',icon:'🔑',title:'RFID Authenticated',message:t.name+' ('+t.id+') verified — '+t.role,tf:'Clearance: '+t.clearance});
+  }, 1200);
+}
+
+function pA(e, t) { document.querySelectorAll('.abtn').forEach(x=>x.classList.remove('sel'));e.classList.add('sel');sA=t;ckF(); }
+function ckF() { document.getElementById('fsub').disabled = !(document.getElementById('ftf').value && sA && cT); }
+
+function subF() {
+  const tfId = document.getElementById('ftf').value;
+  const notes = document.getElementById('fnotes').value;
+  const area = GG.areas[tfId];
+  const btn = document.getElementById('fsub');
+  btn.disabled = true; btn.textContent = '⏳...';
+  GG.uTF(tfId, {doorStatus:'OPENED - AUTHORIZED', status:'MAINTENANCE', currentTechnician:cT.name, area:area.name, location:area.location, city:area.city});
+  GG.aAl({severity:'INFO', title:'✅ Authorised: '+sA, message:cT.name+' ('+cT.id+') opened '+tfId+'. '+sA, transformer:tfId, area:area.name});
+  GG.aN({title:'⚡ '+sA, message:'Technician ('+cT.name+') performing '+sA.toLowerCase()+'.'+(notes?' Note: '+notes:''), type:'MAINTENANCE', area:area.name, transformer:tfId});
+  showPopup({type:'MAINTENANCE',severity:'INFO',icon:'🔧',title:'Door Opened — Authorised',message:sA+' by '+cT.name+' at '+tfId,tf:area.name});
+  const s = document.getElementById('fsucc');
+  s.classList.add('show');
+  document.getElementById('fsuccD').textContent = sA + ' at ' + tfId + ' (' + area.name + ')';
+  snd('w');
+  setTimeout(() => {
+    btn.textContent = '🔓 Open Door & Log Activity'; btn.disabled = false;
+    s.classList.remove('show'); sA = null;
+    document.querySelectorAll('.abtn').forEach(x=>x.classList.remove('sel'));
+    document.getElementById('fnotes').value = ''; document.getElementById('ftf').value = '';
+    GG.uTF(tfId, {doorStatus:'SECURED', status:'ONLINE', currentTechnician:null});
+  }, 3000);
+}
+
+// ═══════════════════════════════════════════════
+//  RESIDENT
+// ═══════════════════════════════════════════════
+let rArea = 'Soweto Zone 7A';
+
+function chRA() { rArea = document.getElementById('rarea').value; document.getElementById('nlist').innerHTML='<div class="empty-msg">🔔 No notifications for '+rArea+'</div>'; rRes(); rRN(); }
+
+function gTF(a) { for(const[id,i]of Object.entries(GG.areas)) if(i.name===a) return id; return 'TF-JHB-001'; }
+
+function rRes() {
+  const tf = GG.tfs[gTF(rArea)];
+  if (!tf) return;
+  const pi=document.getElementById('pwi'),pt=document.getElementById('pwt'),pd=document.getElementById('pwd');
+  const pv=document.getElementById('pvolt'),ps=document.getElementById('pstat'),pdr=document.getElementById('pdoor');
+  pv.textContent = (typeof tf.voltage==='number' ? tf.voltage.toFixed(0) : tf.voltage||'—')+'V';
+  pdr.textContent = tf.doorStatus==='SECURED' ? '🔒' : '🔓';
+  if (tf.status==='ONLINE'){ pi.textContent='⚡';pt.textContent='POWER ON';pt.className='pwt on';pd.textContent='Operating normally';ps.textContent='NORMAL';ps.style.color='var(--grn2)'; }
+  else if (tf.status==='OFFLINE'||tf.status==='BLOWN'){ pi.textContent='🔴';pt.textContent='POWER OUT';pt.className='pwt off';pd.textContent='Outage detected — Eskom AUTOMATICALLY notified';ps.textContent='OUTAGE';ps.style.color='var(--red)'; }
+  else if (tf.status==='TRIPPED'){ pi.textContent='⚠️';pt.textContent='TRIPPED';pt.className='pwt off';pd.textContent='Breaker tripped — Eskom responding';ps.textContent='TRIPPED';ps.style.color='var(--amb)'; }
+  else if (tf.status==='MAINTENANCE'){ pi.textContent='🔧';pt.textContent='MAINTENANCE';pt.className='pwt mt';pd.textContent='Technician'+(tf.currentTechnician?' ('+tf.currentTechnician+')':'')+' working';ps.textContent='MAINT';ps.style.color='var(--blue)'; }
+}
+
+function rNI(n) {
+  if (n.area !== rArea) return;
+  const l = document.getElementById('nlist');
+  if (l.querySelector('.empty-msg')) l.innerHTML = '';
+  l.insertAdjacentHTML('afterbegin', `<div class="ni" data-t="${n.type||'INFO'}">
+    <div class="nit"><span class="nitp">${n.type||'INFO'}</span><span class="nitm">${GG.ft(n.timestamp)}</span></div>
+    <div class="niti">${n.title||''}</div>
+    <div class="nim">${n.message||''}</div>
+    ${n.ticketNumber?'<div class="nitk">🎫 Ticket: '+n.ticketNumber+'</div>':''}
+  </div>`);
+}
+
+function rRN() {
+  const l = document.getElementById('nlist');
+  const f = GG.ns.filter(n => n.area===rArea);
+  if (!f.length) { l.innerHTML='<div class="empty-msg">🔔 No notifications</div>'; return; }
+  l.innerHTML = ''; f.forEach(n => rNI(n));
+}
+
+// ═══════════════════════════════════════════════
+//  SIMULATOR
+// ═══════════════════════════════════════════════
+function sL(m) {
+  const l = document.getElementById('slog');
+  if (l.querySelector('.empty-msg')) l.innerHTML = '';
+  l.insertAdjacentHTML('afterbegin', `<div class="sle"><div class="st">${new Date().toLocaleTimeString('en-ZA')}</div><div class="sm">${m}</div></div>`);
+}
+
+function simE(type) {
+  const tfId = document.getElementById('stf').value;
+  const area = GG.areas[tfId];
+  if (!area) return;
+  const p = document.getElementById('sproc');
+  p.classList.add('show');
+  setTimeout(() => p.classList.remove('show'), 1500);
+
+  switch(type) {
+    case 'BLOWN':
+      GG.uTF(tfId, {status:'BLOWN',voltage:0,current:0,temperature:85,doorStatus:'SECURED',area:area.name,city:area.city,location:area.location});
+      GG.aAl({severity:'CRITICAL',title:'💥 TRANSFORMER BLOWN',message:tfId+' at '+area.name+' — complete failure. '+area.residents+' residents affected.',transformer:tfId,area:area.name});
+      var t1=GG.aTk({type:'BLOWN TRANSFORMER',transformer:tfId,area:area.name,description:'Critical: '+tfId+' blown. '+area.residents+' without power.'});
+      GG.aN({title:'🔴 Power Outage',message:'Transformer failure detected. Eskom AUTOMATICALLY notified. Est: 2–4hrs.',type:'OUTAGE',area:area.name,ticketNumber:t1.ticketNumber,transformer:tfId});
+      showPopup({type:'BLOWN',severity:'CRITICAL',icon:'💥',title:'TRANSFORMER BLOWN — '+tfId,message:'Complete failure at '+area.name+'. '+area.residents+' residents affected. Eskom notified.',tf:area.city+' — '+area.location,ticket:t1.ticketNumber});
+      snd('c');
+      sL('💥 BLOWN: '+tfId+' — Ticket: '+t1.ticketNumber);
+      break;
+
+    case 'TRIPPED':
+      GG.uTF(tfId, {status:'TRIPPED',voltage:0,current:0,temperature:55,area:area.name,city:area.city,location:area.location});
+      GG.aAl({severity:'HIGH',title:'⚡ BREAKER TRIPPED',message:'Breaker tripped at '+tfId+'. '+area.residents+' residents affected.',transformer:tfId,area:area.name});
+      var t2=GG.aTk({type:'BREAKER TRIPPED',transformer:tfId,area:area.name,description:'Tripped at '+tfId+'. Manual reset needed.'});
+      GG.aN({title:'⚠️ Breaker Tripped',message:'Breaker tripped. Eskom notified. Technician dispatching.',type:'TRIPPED',area:area.name,ticketNumber:t2.ticketNumber,transformer:tfId});
+      showPopup({type:'TRIPPED',severity:'HIGH',icon:'⚡',title:'BREAKER TRIPPED — '+tfId,message:'Voltage dropped to 0. Eskom notified automatically.',tf:area.city+' — '+area.location,ticket:t2.ticketNumber});
+      snd('c');
+      sL('⚡ TRIPPED: '+tfId);
+      break;
+
+    case 'TAMPER':
+      GG.uTF(tfId, {doorStatus:'TAMPER ALERT',tamperDetected:true,area:area.name,city:area.city,location:area.location});
+      GG.aAl({severity:'CRITICAL',title:'🚨 TAMPER DETECTED',message:'Unauthorized access at '+tfId+'. No RFID auth. GPS: '+area.lat+', '+area.lng,transformer:tfId,area:area.name});
+      GG.aTk({type:'SECURITY-TAMPER',transformer:tfId,area:area.name,description:'Tampering at '+tfId+'. Security dispatched.'});
+      GG.aN({title:'🚨 Security Alert',message:'Suspicious activity at transformer. Authorities notified. Please report anything suspicious.',type:'TAMPER',area:area.name,transformer:tfId});
+      showPopup({type:'TAMPER',severity:'CRITICAL',icon:'🚨',title:'🚨 TAMPER DETECTED — '+tfId,message:'Unauthorized access — no RFID. Vibration sensor triggered. Security + SAPS alerted.',tf:area.city+' — GPS: '+area.lat+', '+area.lng});
+      startSiren('🚨 TAMPER DETECTED', 'Unauthorized Access — Security Breach', 'Someone attempted unauthorized access to '+tfId+' at '+area.name+' without RFID authentication. Vibration sensor triggered. Security and SAPS have been automatically alerted.', tfId);
+      snd('c');
+      sL('🚨 TAMPER: '+tfId+' — SIREN ACTIVE');
+      break;
+
+    case 'LOW_V':
+      var lv = +(160+Math.random()*30).toFixed(1);
+      GG.uTF(tfId, {voltage:lv,status:'ONLINE',area:area.name,city:area.city,location:area.location});
+      GG.aAl({severity:'MEDIUM',title:'📉 LOW VOLTAGE',message:tfId+' reading '+lv+'V (normal: 220–240V)',transformer:tfId,area:area.name});
+      showPopup({type:'LOW_V',severity:'MEDIUM',icon:'📉',title:'LOW VOLTAGE — '+tfId,message:'Reading '+lv+'V. Normal: 220–240V. Monitoring closely.',tf:area.city+' — '+area.location});
+      snd('w');
+      sL('📉 LOW VOLTAGE: '+tfId+' at '+lv+'V');
+      break;
+
+    case 'DOOR':
+      GG.uTF(tfId, {doorStatus:'FORCED OPEN',tamperDetected:true,area:area.name,city:area.city,location:area.location});
+      GG.aAl({severity:'CRITICAL',title:'🚪 DOOR FORCED OPEN',message:'Break-in attempt at '+tfId+'. No RFID auth.',transformer:tfId,area:area.name});
+      GG.aTk({type:'FORCED ENTRY',transformer:tfId,area:area.name,description:'Door forced at '+tfId+'. SAPS notified.'});
+      GG.aN({title:'🚨 Break-In Detected',message:'Break-in at transformer. SAPS notified. Call 10111 if you see suspicious activity.',type:'TAMPER',area:area.name,transformer:tfId});
+      showPopup({type:'DOOR',severity:'CRITICAL',icon:'🚪',title:'DOOR FORCED OPEN — '+tfId,message:'Break-in in progress. SAPS auto-notified. GPS coordinates transmitted.',tf:area.city+' — '+area.location});
+      startSiren('🚪 DOOR FORCED OPEN', 'Break-In In Progress', 'The transformer door at '+tfId+' ('+area.name+') has been forced open without RFID authentication. SAPS and Eskom security have been automatically notified with GPS coordinates.', tfId);
+      snd('c');
+      sL('🚪 DOOR FORCED: '+tfId+' — SIREN ACTIVE');
+      break;
+
+    case 'OVERLOAD':
+      var hc=+(180+Math.random()*50).toFixed(1), ht=+(70+Math.random()*15).toFixed(1);
+      GG.uTF(tfId, {current:hc,temperature:ht,status:'ONLINE',area:area.name,city:area.city,location:area.location});
+      GG.aAl({severity:'HIGH',title:'🔥 OVERLOAD DETECTED',message:tfId+' — '+hc+'A / '+ht+'°C. Threshold exceeded.',transformer:tfId,area:area.name});
+      showPopup({type:'OVERLOAD',severity:'HIGH',icon:'🔥',title:'OVERLOAD — '+tfId,message:'Current: '+hc+'A, Temp: '+ht+'°C. Monitoring — may trip soon.',tf:area.city+' — '+area.location});
+      snd('w');
+      sL('🔥 OVERLOAD: '+tfId+' at '+hc+'A / '+ht+'°C');
+      break;
+
+    case 'BRIDGE':
+      GG.aAl({severity:'CRITICAL',title:'⛓️ ILLEGAL BRIDGING',message:'Illegal bypass detected near '+tfId+'. Auto-cutoff activated. Investigation team dispatched.',transformer:tfId,area:area.name});
+      GG.aTk({type:'ILLEGAL BRIDGING',transformer:tfId,area:area.name,description:'Bridging detected near '+tfId+'. Auto-cutoff. Evidence logged.'});
+      GG.aN({title:'⚠️ Illegal Connection',message:'Illegal electricity connection detected in your area. Eskom investigating. Supply protected.',type:'INFO',area:area.name,transformer:tfId});
+      showPopup({type:'BRIDGE',severity:'CRITICAL',icon:'⛓️',title:'⛓️ ILLEGAL BRIDGING — '+tfId,message:'Current spike detected. Illegal bypass confirmed. Auto-cutoff activated. Investigation team dispatched with GPS.',tf:area.city+' — '+area.location});
+      startSiren('⛓️ ILLEGAL BRIDGING', 'Electricity Theft Detected', 'An illegal electricity bypass (bridging) has been detected near '+tfId+' in '+area.name+'. The illegal supply has been automatically cut. Eskom investigation team has been dispatched with GPS coordinates.', tfId);
+      snd('c');
+      sL('⛓️ BRIDGING: '+tfId+' — SIREN + AUTO-CUTOFF');
+      break;
+
+    case 'RESTORE':
+      GG.uTF(tfId, {status:'ONLINE',voltage:+(228+Math.random()*6).toFixed(1),current:+(45+Math.random()*20).toFixed(1),temperature:+(35+Math.random()*10).toFixed(1),doorStatus:'SECURED',tamperDetected:false,currentTechnician:null,area:area.name,city:area.city,location:area.location});
+      GG.aAl({severity:'LOW',title:'✅ POWER RESTORED',message:tfId+' back online. Area service restored.',transformer:tfId,area:area.name});
+      GG.aN({title:'✅ Power Restored!',message:'Your area power has been fully restored. Thank you for your patience.',type:'RESOLVED',area:area.name,transformer:tfId});
+      showPopup({type:'RESTORE',severity:'INFO',icon:'✅',title:'POWER RESTORED — '+tfId,message:area.name+' back online. All systems normal.',tf:area.city});
+      dismissSiren();
+      snd('i');
+      sL('✅ RESTORED: '+tfId);
+      break;
+  }
+
+  buildMap();
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+GG.init();
+rCtrl();
+rAllAl();
+rAllTk();
+rRes();
+rRN();
+buildMap();
+buildCityTabs();
+</script>
+</body>
+</html>
